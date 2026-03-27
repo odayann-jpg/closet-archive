@@ -368,8 +368,15 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
         </div>
       </div>
       <div class="two-col">
-        <div class="field"><label class="field-label">電話番号</label><input type="text" id="r-phone" placeholder="090-0000-0000"></div>
         <div class="field"><label class="field-label">来店日 <span class="req">*</span></label><input type="date" id="r-date"></div>
+        <div class="field"><label class="field-label">時間帯</label>
+          <select id="r-time">
+            <option value="">選択</option>
+            <option>11時</option><option>12時</option><option>13時</option><option>14時</option>
+            <option>15時</option><option>16時</option><option>17時</option><option>18時</option>
+            <option>19時</option><option>20時</option>
+          </select>
+        </div>
       </div>
       <div class="two-col">
         <div class="field"><label class="field-label">対応スタッフ</label><select id="r-staff"><option value="">選択</option></select></div>
@@ -513,7 +520,6 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
         </div>
         <div class="search-field"><label>お名前（部分一致）</label><input type="text" id="s-name" placeholder="名前を入力"></div>
         <div class="search-field"><label>対応スタッフ</label><select id="s-staff"><option value="">すべて</option></select></div>
-        <div class="search-field"><label>電話番号（部分一致）</label><input type="text" id="s-phone" placeholder="番号を入力"></div>
         <div><button class="clear-btn" onclick="clearSearch()">クリア</button></div>
       </div>
     </div>
@@ -869,18 +875,19 @@ function submitForm(){
   var lineEl=document.querySelector('input[name="r-line"]:checked');
   var staff=document.getElementById('r-staff').value;
   var result=document.getElementById('r-result').value;
+  var visitTime=document.getElementById('r-time').value;
 
   var customerData={
     name:name,kana:document.getElementById('r-kana').value.trim(),
     gender:document.getElementById('r-gender').value,age:document.getElementById('r-age').value,
-    phone:document.getElementById('r-phone').value.trim(),line:lineEl?lineEl.value:'',
+    line:lineEl?lineEl.value:'',
     area:document.getElementById('r-area').value.trim(),brand:document.getElementById('r-brand').value.trim(),
     familyHusband:document.getElementById('r-family-husband').checked,familyWife:document.getElementById('r-family-wife').checked,familyKids:document.getElementById('r-family-kids').checked,
     createdAt:Date.now(),
-    totalBuy:buyAmt,totalSell:sellAmt,visitCount:1,lastDate:date,lastStaff:staff,lastResult:result
+    totalBuy:buyAmt,totalSell:sellAmt,visitCount:1,lastDate:date,lastTime:visitTime,lastStaff:staff,lastResult:result
   };
   var visitData={
-    date:date,staff:staff,result:result,buyAmount:buyAmt,sellAmount:sellAmt,
+    date:date,time:visitTime,staff:staff,result:result,buyAmount:buyAmt,sellAmount:sellAmt,
     triggers:triggers,reasons:reasons,memo:document.getElementById('r-memo').value.trim(),approaches:approaches,
     successReasons:successReasons,failReasons:failReasons,
     createdAt:Date.now()
@@ -896,8 +903,8 @@ function submitForm(){
 }
 
 function resetForm(){
-  ['r-name','r-kana','r-phone','r-area','r-brand','r-trigger-other','r-reason-other','r-approach-other','r-success-reason-other','r-fail-reason-other'].forEach(function(id){document.getElementById(id).value='';});
-  ['r-gender','r-age','r-staff','r-result'].forEach(function(id){document.getElementById(id).value='';});
+  ['r-name','r-kana','r-area','r-brand','r-trigger-other','r-reason-other','r-approach-other','r-success-reason-other','r-fail-reason-other'].forEach(function(id){document.getElementById(id).value='';});
+  ['r-gender','r-age','r-staff','r-result','r-time'].forEach(function(id){document.getElementById(id).value='';});
   ['r-buy-amount','r-sell-amount'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('r-memo').value='';
@@ -913,14 +920,12 @@ function resetForm(){
 function getFiltered(){
   var df=document.getElementById('s-date-from').value,dt=document.getElementById('s-date-to').value;
   var nq=document.getElementById('s-name').value.toLowerCase(),sq=document.getElementById('s-staff').value;
-  var pq=document.getElementById('s-phone').value.replace(/[-\s]/g,'');
   return Object.entries(customers).filter(function(e){
     var c=e[1];
     if(df&&(c.lastDate||'') < df)return false;
     if(dt&&(c.lastDate||'') > dt)return false;
     if(nq&&(c.name||'').toLowerCase().indexOf(nq)===-1&&(c.kana||'').toLowerCase().indexOf(nq)===-1)return false;
     if(sq&&c.lastStaff!==sq)return false;
-    if(pq&&(c.phone||'').replace(/[-\s]/g,'').indexOf(pq)===-1)return false;
     return true;
   });
 }
@@ -953,7 +958,7 @@ function renderList(){
       '</td>'+
       '<td><span class="editable" data-key="'+k+'" data-field="gender" data-type="select" data-opts="[\'\',\'女性\',\'男性\',\'その他\']">'+escHtml(c.gender||'')+'</span></td>'+
       '<td><span class="editable" data-key="'+k+'" data-field="age" data-type="select" data-opts="[\'\',\'10代\',\'20代\',\'30代\',\'40代\',\'50代\',\'60代以上\']">'+escHtml(c.age||'')+'</span></td>'+
-      '<td>'+escHtml(c.lastDate||'')+'</td>'+
+      '<td>'+escHtml(c.lastDate||'')+(c.lastTime?'<br><span style="font-size:11px;color:var(--ink-mute)">'+escHtml(c.lastTime)+'</span>':'')+'</td>'+
       '<td style="text-align:center"><span style="font-weight:700">'+( c.visitCount||1)+'</span><span style="font-size:11px;color:var(--ink-mute)"> 回</span></td>'+
       '<td class="amount-cell"><span class="amount-total">'+( (c.totalBuy||0)>0?fmtYen(c.totalBuy):'—')+'</span></td>'+
       '<td class="amount-cell"><span class="amount-total">'+( (c.totalSell||0)>0?fmtYen(c.totalSell):'—')+'</span></td>'+
@@ -1008,7 +1013,7 @@ function sortTable(key){
 }
 
 function clearSearch(){
-  ['s-date-from','s-date-to','s-name','s-phone'].forEach(function(id){document.getElementById(id).value='';});
+  ['s-date-from','s-date-to','s-name'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('s-staff').value='';renderList();
 }
 
@@ -1038,7 +1043,7 @@ function renderDetailInfo(k){
   var c=customers[k];if(!c)return;
   var fam=[];if(c.familyHusband)fam.push('旦那様の服ありそう');if(c.familyWife)fam.push('奥様の服ありそう');if(c.familyKids)fam.push('子供服ありそう');
   var rows=[
-    ['最終来店日',c.lastDate],['ふりがな',c.kana],['性別',c.gender],['年代',c.age],['電話番号',c.phone],
+    ['最終来店日',c.lastDate+(c.lastTime?' '+c.lastTime:'')],['ふりがな',c.kana],['性別',c.gender],['年代',c.age],
     ['LINE登録',c.line],['よく買うエリア',c.area],['よく買うブランド',c.brand],['家族の服',fam.join('、')]
   ];
   var infoHtml='<div class="amount-summary">'+
@@ -1062,7 +1067,7 @@ function renderDetailVisits(k){
       var resultBadge=vd.result==='成立'?'<span class="badge badge-success">成立</span>':vd.result==='不成立'?'<span class="badge badge-fail">不成立</span>':'';
       html+='<div class="visit-card">'+
         '<div class="visit-card-header">'+
-          '<span class="visit-card-date">'+escHtml(vd.date||'')+'</span>'+
+          '<span class="visit-card-date">'+escHtml(vd.date||'')+(vd.time?' '+escHtml(vd.time):'')+'</span>'+
           '<div class="visit-card-badges">'+resultBadge+(vd.staff?'<span style="font-size:11px;color:var(--ink-mute)">'+escHtml(vd.staff)+'</span>':'')+'</div>'+
         '</div>'+
         ((vd.reasons&&vd.reasons.length)?'<div class="visit-card-body">手放す理由: '+(vd.reasons||[]).map(function(r){return '<span class="badge badge-gold">'+escHtml(r)+'</span>';}).join(' ')+'</div>':'') +
@@ -1102,6 +1107,7 @@ function showAddVisitForm(k){
     '<div class="add-visit-form-title">新しい来店を記録</div>'+
     '<div class="mini-two">'+
       '<div class="mini-field"><label class="mini-label">来店日 *</label><input type="date" id="av-date" value="'+today+'"></div>'+
+      '<div class="mini-field"><label class="mini-label">時間帯</label><select id="av-time"><option value="">選択</option><option>11時</option><option>12時</option><option>13時</option><option>14時</option><option>15時</option><option>16時</option><option>17時</option><option>18時</option><option>19時</option><option>20時</option></select></div>'+
       '<div class="mini-field"><label class="mini-label">スタッフ</label><select id="av-staff"><option value="">選択</option>'+staffOpts+'</select></div>'+
     '</div>'+
     '<div class="mini-field"><label class="mini-label">買取結果</label>'+
@@ -1152,7 +1158,7 @@ function saveVisit(k){
   var buyAmt=parseInt(document.getElementById('av-buy').value)||0;
   var sellAmt=parseInt(document.getElementById('av-sell').value)||0;
   var visitData={
-    date:date,staff:document.getElementById('av-staff').value,result:document.getElementById('av-result').value,
+    date:date,time:document.getElementById('av-time').value,staff:document.getElementById('av-staff').value,result:document.getElementById('av-result').value,
     buyAmount:buyAmt,sellAmount:sellAmt,memo:document.getElementById('av-memo').value.trim(),
     triggers:[],reasons:[],approaches:[],
     successReasons:getAvChecked('av-success-group'),
@@ -1168,9 +1174,10 @@ function saveVisit(k){
     var newCount=(parseInt(c.visitCount||1)+1);
     // 最終来店日は新しい方を採用
     var newLastDate=(!c.lastDate||date>c.lastDate)?date:c.lastDate;
+    var newLastTime=(!c.lastDate||date>=c.lastDate)?visitData.time:(c.lastTime||'');
     return db.ref('customers/'+k).update({
       totalBuy:newTotalBuy,totalSell:newTotalSell,visitCount:newCount,
-      lastDate:newLastDate,lastStaff:visitData.staff,lastResult:visitData.result
+      lastDate:newLastDate,lastTime:newLastTime,lastStaff:visitData.staff,lastResult:visitData.result
     });
   }).then(function(){
     showToast('✓ 来店を記録しました');
