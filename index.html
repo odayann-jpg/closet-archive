@@ -257,9 +257,39 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
 
 @media(max-width:768px){.search-grid{grid-template-columns:1fr 1fr;}.list-wrap{padding:12px 12px 60px;}.header{padding:0 12px;}.header-brand{font-size:15px;}.amount-summary{grid-template-columns:1fr 1fr;}}
 @media(max-width:540px){.search-grid{grid-template-columns:1fr;}.two-col,.three-col,.mini-two{grid-template-columns:1fr;}.amount-summary{grid-template-columns:1fr 1fr;}}
+
+/* LOGIN */
+.login-screen{display:none;position:fixed;inset:0;background:var(--navy, #0f1e3c);z-index:9998;align-items:center;justify-content:center;padding:20px;}
+.login-screen.show{display:flex;}
+.login-box{background:#ffffff;border-radius:16px;padding:40px 36px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(15,30,60,.3);text-align:center;}
+.login-logo{font-family:'Playfair Display',serif;font-size:24px;color:#1a3a6b;margin-bottom:4px;}
+.login-logo span{display:block;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:#7a8baa;letter-spacing:.14em;margin-top:3px;}
+.login-title{font-size:15px;font-weight:700;color:#0f1e3c;margin:24px 0 6px;}
+.login-desc{font-size:12px;color:#7a8baa;margin-bottom:24px;line-height:1.6;}
+.login-input{width:100%;padding:13px 16px;border:1.5px solid #d0d8ea;border-radius:8px;font-size:16px;font-family:'Noto Sans JP',sans-serif;background:#f0f3f8;color:#0f1e3c;text-align:center;letter-spacing:.2em;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none;}
+.login-input:focus{outline:none;border-color:#2a5298;box-shadow:0 0 0 3px #dce6f5;background:#fff;}
+.login-btn{width:100%;padding:14px;background:#1a3a6b;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;margin-top:14px;transition:background .18s;letter-spacing:.06em;}
+.login-btn:hover{background:#2a5298;}
+.login-btn:active{transform:scale(.98);}
+.login-error{color:#c0392b;font-size:12px;margin-top:10px;padding:8px 12px;background:#fde8e8;border-radius:6px;display:none;}
+.login-error.show{display:block;}
+.login-footer{font-size:11px;color:#7a8baa;margin-top:20px;}
 </style>
 </head>
 <body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Closet Archive <span>顧客台帳システム</span></div>
+    <div class="login-title">パスワードを入力してください</div>
+    <div class="login-desc">このシステムはスタッフ専用です。<br>担当者からパスワードを受け取ってください。</div>
+    <input class="login-input" type="password" id="login-password" placeholder="パスワード" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">ログイン</button>
+    <div class="login-error" id="login-error">パスワードが違います。もう一度お試しください。</div>
+    <div class="login-footer">パスワードを忘れた場合は管理者にお問い合わせください。</div>
+  </div>
+</div>
 
 <!-- SETUP -->
 <div class="setup-screen" id="setup-screen">
@@ -301,6 +331,7 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
     <button class="nav-btn active" id="nav-register" onclick="switchView('register')">＋ 新規登録</button>
     <button class="nav-btn" id="nav-list" onclick="switchView('list')">顧客一覧</button>
     <button class="settings-btn" onclick="openSettings()">⚙ 設定</button>
+    <button class="settings-btn" onclick="logout()" style="margin-left:4px;">ログアウト</button>
   </nav>
 </header>
 
@@ -498,6 +529,7 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
         <button class="settings-tab" onclick="switchSettingsTab('triggers',this)">来店きっかけ</button>
         <button class="settings-tab" onclick="switchSettingsTab('reasons',this)">手放す理由</button>
         <button class="settings-tab" onclick="switchSettingsTab('approaches',this)">次回アプローチ</button>
+        <button class="settings-tab" onclick="switchSettingsTab('password',this)">🔑 PW変更</button>
       </div>
       <div class="settings-panel active" id="panel-staff">
         <div class="settings-section-label">スタッフ一覧</div>
@@ -523,6 +555,24 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
         <div class="settings-note">※「その他」は常に表示されます。</div>
       </div>
       <button class="settings-save-btn" onclick="saveSettings()">変更を保存する</button>
+      <div id="panel-password" class="settings-panel">
+        <div class="settings-section-label">パスワード変更</div>
+        <div style="margin-bottom:12px">
+          <label class="setup-input-label">現在のパスワード</label>
+          <input type="password" class="setup-input" id="pw-current" placeholder="現在のパスワード" style="margin-bottom:0">
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="setup-input-label">新しいパスワード</label>
+          <input type="password" class="setup-input" id="pw-new" placeholder="新しいパスワード（6文字以上）" style="margin-bottom:0">
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="setup-input-label">新しいパスワード（確認）</label>
+          <input type="password" class="setup-input" id="pw-confirm" placeholder="もう一度入力" style="margin-bottom:0">
+        </div>
+        <div class="setup-error" id="pw-error" style="margin-top:8px"></div>
+        <button class="settings-save-btn" onclick="changePassword()" style="margin-top:16px">パスワードを変更する</button>
+        <div class="settings-note" style="margin-top:12px">※ 初期パスワードは <strong>closet2024</strong> です。必ず変更してください。<br>※ 変更後は全デバイスで新しいパスワードが必要になります。</div>
+      </div>
       <div style="text-align:center;margin-top:14px"><button onclick="resetConfig()" style="background:none;border:none;color:var(--ink-mute);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'Noto Sans JP',sans-serif;">Firebase接続設定をリセット</button></div>
     </div>
   </div>
@@ -538,7 +588,65 @@ var settingsDraft={},settingsCurrentTab='staff';
 var currentDetailKey=null;
 
 // ══ CONFIG ══
-function getSavedConfig(){try{return JSON.parse(localStorage.getItem('fb_config')||'null');}catch(e){return null;}}
+// ══ LOGIN ══
+var DEFAULT_PASSWORD = 'closet2024'; // 初期パスワード（初回のみ使用）
+var isLoggedIn = false;
+
+function checkLogin() {
+  // セッション中はログイン済みを保持
+  if (sessionStorage.getItem('ca_auth') === '1') { isLoggedIn = true; return true; }
+  return false;
+}
+
+function showLoginScreen() {
+  document.getElementById('login-screen').classList.add('show');
+  setTimeout(function(){ document.getElementById('login-password').focus(); }, 100);
+}
+
+function doLogin() {
+  var input = document.getElementById('login-password').value;
+  var errEl = document.getElementById('login-error');
+  if (!input) { errEl.classList.add('show'); return; }
+
+  // Firebaseからパスワードを取得して照合
+  if (!db) {
+    // Firebase未接続時は初期パスワードで照合
+    if (input === DEFAULT_PASSWORD) {
+      onLoginSuccess();
+    } else {
+      errEl.classList.add('show');
+      document.getElementById('login-password').value = '';
+    }
+    return;
+  }
+  db.ref('settings/password').once('value', function(snap) {
+    var storedPw = snap.val() || DEFAULT_PASSWORD;
+    if (input === storedPw) {
+      onLoginSuccess();
+    } else {
+      errEl.classList.add('show');
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-password').focus();
+    }
+  });
+}
+
+function onLoginSuccess() {
+  isLoggedIn = true;
+  sessionStorage.setItem('ca_auth', '1');
+  document.getElementById('login-screen').classList.remove('show');
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('login-password').value = '';
+}
+
+function logout() {
+  if (!confirm('ログアウトしますか？')) return;
+  sessionStorage.removeItem('ca_auth');
+  isLoggedIn = false;
+  document.getElementById('login-screen').classList.add('show');
+  document.getElementById('login-password').value = '';
+  setTimeout(function(){ document.getElementById('login-password').focus(); }, 100);
+}
 function saveConfig(){
   var ak=document.getElementById('cfg-apiKey').value.trim(),ad=document.getElementById('cfg-authDomain').value.trim(),du=document.getElementById('cfg-databaseURL').value.trim(),pi=document.getElementById('cfg-projectId').value.trim();
   var er=document.getElementById('setup-error');
@@ -604,7 +712,13 @@ document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
     if(el){el.addEventListener('input',renderList);el.addEventListener('change',renderList);}
   });
   var cfg=getSavedConfig();
-  if(cfg){initFirebase(cfg);}else{document.getElementById('setup-screen').classList.add('show');}
+  if(cfg){
+    initFirebase(cfg);
+    // Firebase接続後にログイン画面を表示
+    if(!checkLogin()){ showLoginScreen(); }
+  } else {
+    document.getElementById('setup-screen').classList.add('show');
+  }
 })();
 
 // ══ STAFF / MASTER ══
@@ -1016,7 +1130,34 @@ function switchSettingsTab(tab,btn){
   document.getElementById('panel-'+tab).classList.add('active');
   document.querySelectorAll('.settings-tab').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');
-  renderSettingsPanel(tab);
+  if(tab!=='password') renderSettingsPanel(tab);
+  // パスワードタブでは保存ボタンを非表示
+  var saveBtn=document.querySelector('.settings-save-btn');
+  if(saveBtn) saveBtn.style.display = tab==='password'?'none':'block';
+}
+
+function changePassword(){
+  var current=document.getElementById('pw-current').value;
+  var newPw=document.getElementById('pw-new').value;
+  var confirm=document.getElementById('pw-confirm').value;
+  var errEl=document.getElementById('pw-error');
+  errEl.classList.remove('show'); errEl.textContent='';
+
+  if(!current||!newPw||!confirm){errEl.textContent='すべての項目を入力してください。';errEl.classList.add('show');return;}
+  if(newPw.length<6){errEl.textContent='新しいパスワードは6文字以上にしてください。';errEl.classList.add('show');return;}
+  if(newPw!==confirm){errEl.textContent='新しいパスワードが一致しません。';errEl.classList.add('show');return;}
+
+  db.ref('settings/password').once('value',function(snap){
+    var storedPw=snap.val()||DEFAULT_PASSWORD;
+    if(current!==storedPw){errEl.textContent='現在のパスワードが違います。';errEl.classList.add('show');return;}
+    db.ref('settings/password').set(newPw).then(function(){
+      showToast('✓ パスワードを変更しました');
+      document.getElementById('pw-current').value='';
+      document.getElementById('pw-new').value='';
+      document.getElementById('pw-confirm').value='';
+      closeModal('settings-modal');
+    }).catch(function(e){errEl.textContent='変更に失敗しました: '+e.message;errEl.classList.add('show');});
+  });
 }
 function renderSettingsPanel(tab){
   var list=document.getElementById('list-'+tab);if(!list)return;
