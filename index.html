@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>顧客台帳 — ブランド買取</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<!-- Firebase SDK (compat版 = type="module"不要、ダブルクリックで開ける) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --ink: #1a1714; --ink-soft: #4a4540; --ink-mute: #8a8480;
+    --cream: #f5f0ea; --cream-dark: #ede7df; --cream-deep: #e0d8ce;
+    --gold: #b8945a; --gold-light: #d4af7a; --gold-pale: #f0e6d3;
+    --red: #c0392b; --green-soft: #4a7c59; --white: #fdfaf6;
+    --shadow: 0 2px 12px rgba(26,23,20,0.10); --shadow-lg: 0 8px 32px rgba(26,23,20,0.14);
+    --radius: 10px; --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; font-size: 14px; }
+
+  .setup-screen { display: none; position: fixed; inset: 0; background: var(--ink); z-index: 9999; justify-content: center; align-items: flex-start; padding: 40px 20px; overflow-y: auto; }
+  .setup-screen.show { display: flex; }
+  .setup-box { background: var(--white); border-radius: 16px; padding: 36px 32px; max-width: 500px; width: 100%; box-shadow: var(--shadow-lg); }
+  .setup-logo { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--gold); }
+  .setup-logo span { display: block; font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-mute); letter-spacing: 0.12em; margin-top: 2px; }
+  .setup-title { font-size: 17px; font-weight: 700; margin: 18px 0 6px; }
+  .setup-desc { font-size: 13px; color: var(--ink-soft); line-height: 1.7; margin-bottom: 20px; }
+  .setup-step { background: var(--cream); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; border-left: 3px solid var(--gold); }
+  .setup-step-num { font-size: 11px; font-weight: 700; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 4px; }
+  .setup-step-text { font-size: 12px; line-height: 1.7; color: var(--ink-soft); }
+  .setup-step-text a { color: var(--gold); }
+  .setup-input-label { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-bottom: 5px; display: block; letter-spacing: 0.06em; }
+  .setup-input { width: 100%; padding: 9px 11px; border: 1.5px solid var(--cream-deep); border-radius: var(--radius-sm); font-size: 13px; font-family: monospace; background: var(--cream); color: var(--ink); margin-bottom: 9px; transition: border-color 0.15s; }
+  .setup-input:focus { outline: none; border-color: var(--gold); }
+  .setup-btn { width: 100%; padding: 13px; background: var(--gold); color: var(--ink); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; transition: background 0.18s; margin-top: 6px; }
+  .setup-btn:hover { background: var(--gold-light); }
+  .setup-error { color: var(--red); font-size: 12px; margin-top: 6px; display: none; padding: 8px 10px; background: #fde8e8; border-radius: var(--radius-sm); }
+  .setup-error.show { display: block; }
+
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .sync-dot.connected { background: #4a7c59; animation: pulse 2s infinite; }
+  .sync-dot.syncing { background: var(--gold); }
+  .sync-dot.error { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+  .sync-label { font-size: 11px; color: var(--cream-deep); display: flex; align-items: center; }
+
+  .header { background: var(--ink); color: var(--cream); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-lg); }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .header-brand { font-family: 'Playfair Display', serif; font-size: 18px; letter-spacing: 0.04em; color: var(--gold-light); }
+  .header-brand span { font-size: 11px; font-family: 'Noto Sans JP', sans-serif; color: var(--ink-mute); display: block; letter-spacing: 0.12em; margin-top: -2px; }
+  .header-nav { display: flex; gap: 4px; }
+  .nav-btn { background: none; border: 1px solid transparent; color: var(--cream-deep); padding: 6px 16px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; transition: all 0.18s; }
+  .nav-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+  .nav-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 700; }
+  .settings-btn { background: none; border: 1px solid rgba(255,255,255,0.1); color: var(--ink-mute); padding: 5px 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; transition: all 0.15s; }
+  .settings-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .register-wrap { max-width: 540px; margin: 0 auto; padding: 24px 16px 80px; }
+  .section-card { background: var(--white); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--cream-deep); }
+  .section-title { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: var(--gold); text-transform: uppercase; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--cream-dark); display: flex; align-items: center; gap: 6px; }
+  .section-title .star { color: var(--red); font-size: 14px; }
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label { display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft); margin-bottom: 5px; letter-spacing: 0.06em; }
+  .field-label .req { color: var(--red); margin-left: 2px; }
+  .field input[type="text"], .field input[type="date"], .field select, .field textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--cream-deep); border-radius: var(--radius-sm); font-size: 15px; font-family: 'Noto Sans JP', sans-serif; background: var(--cream); color: var(--ink); transition: border-color 0.15s, box-shadow 0.15s; -webkit-appearance: none; appearance: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-pale); background: var(--white); }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8480' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+  .field textarea { min-height: 90px; resize: vertical; line-height: 1.6; font-size: 14px; }
+  .field textarea.large { min-height: 120px; }
+  .radio-group, .check-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .radio-group label, .check-group label { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: var(--cream); border: 1.5px solid var(--cream-deep); border-radius: 20px; cursor: pointer; font-size: 13px; transition: all 0.15s; user-select: none; }
+  .radio-group label:hover, .check-group label:hover { border-color: var(--gold-light); background: var(--gold-pale); }
+  .radio-group input[type="radio"], .check-group input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--gold); cursor: pointer; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .submit-btn { width: 100%; padding: 16px; background: var(--gold); color: var(--ink); border: none; border-radius: var(--radius); font-size: 16px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; letter-spacing: 0.08em; transition: background 0.18s, transform 0.1s; box-shadow: 0 4px 16px rgba(184,148,90,0.4); margin-top: 8px; }
+  .submit-btn:hover { background: var(--gold-light); }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .conditional-field { display: none; margin-top: 8px; }
+  .conditional-field.show { display: block; }
+
+  .list-wrap { padding: 20px 20px 60px; }
+  .list-toolbar { background: var(--white); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--cream-deep); }
+  .toolbar-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toolbar-title { font-family: 'Playfair Display', serif; font-size: 18px; }
+  .toolbar-count { font-size: 13px; color: var(--ink-mute); background: var(--cream-dark); padding: 3px 10px; border-radius: 12px; }
+  .search-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+  .search-field label { display: block; font-size: 11px; font-weight: 700; color: var(--ink-mute); margin-bottom: 4px; letter-spacing: 0.06em; }
+  .search-field input, .search-field select { width: 100%; padding: 8px 10px; border: 1.5px solid var(--cream-deep); border-radius: var(--radius-sm); font-size: 13px; font-family: 'Noto Sans JP', sans-serif; background: var(--cream); color: var(--ink); -webkit-appearance: none; appearance: none; }
+  .search-field input:focus, .search-field select:focus { outline: none; border-color: var(--gold); }
+  .search-field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8480' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 24px; cursor: pointer; }
+  .date-range { display: flex; gap: 6px; align-items: center; }
+  .date-range span { font-size: 11px; color: var(--ink-mute); white-space: nowrap; }
+  .date-range input { flex: 1; min-width: 0; }
+  .clear-btn { padding: 8px 16px; background: var(--cream-dark); border: 1px solid var(--cream-deep); border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; color: var(--ink-soft); font-family: 'Noto Sans JP', sans-serif; transition: all 0.15s; white-space: nowrap; }
+  .clear-btn:hover { background: var(--cream-deep); }
+  .table-wrap { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--cream-deep); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+  thead th { background: var(--ink); color: var(--cream-deep); padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; white-space: nowrap; cursor: pointer; user-select: none; transition: background 0.15s; }
+  thead th:hover { background: var(--ink-soft); color: var(--gold-light); }
+  thead th.sorted { color: var(--gold-light); }
+  tbody tr { border-bottom: 1px solid var(--cream-dark); transition: background 0.12s; }
+  tbody tr:hover { background: var(--gold-pale); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 14px; vertical-align: top; font-size: 13px; }
+  .editable { cursor: pointer; border-radius: 4px; padding: 2px 4px; min-height: 22px; display: block; transition: background 0.12s; line-height: 1.5; }
+  .editable:hover { background: var(--cream-dark); }
+  .editable-input { width: 100%; border: 2px solid var(--gold); border-radius: 4px; padding: 3px 6px; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; background: var(--white); box-shadow: 0 0 0 3px var(--gold-pale); outline: none; min-width: 80px; }
+  .editable-select { width: 100%; border: 2px solid var(--gold); border-radius: 4px; padding: 3px 24px 3px 6px; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; background: var(--white); box-shadow: 0 0 0 3px var(--gold-pale); outline: none; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b8945a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; cursor: pointer; }
+  .editable-textarea { width: 180px; border: 2px solid var(--gold); border-radius: 4px; padding: 4px 6px; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; background: var(--white); box-shadow: 0 0 0 3px var(--gold-pale); outline: none; min-height: 60px; resize: vertical; line-height: 1.5; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .badge-success { background: #d4f0dc; color: var(--green-soft); }
+  .badge-fail { background: #fde8e8; color: var(--red); }
+  .badge-gold { background: var(--gold-pale); color: var(--gold); }
+  .memo-cell { max-width: 200px; }
+  .memo-preview { font-size: 12px; color: var(--ink-soft); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.5; }
+  .action-cell { white-space: nowrap; }
+  .action-btn { background: none; border: 1px solid var(--cream-deep); color: var(--ink-mute); padding: 4px 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: 11px; font-family: 'Noto Sans JP', sans-serif; transition: all 0.15s; }
+  .action-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .action-btn.danger:hover { border-color: var(--red); color: var(--red); background: #fde8e8; }
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--ink-mute); }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,23,20,0.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--white); border-radius: var(--radius); max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+  .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--cream-dark); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--white); }
+  .modal-header h3 { font-family: 'Playfair Display', serif; font-size: 20px; }
+  .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-mute); padding: 4px 8px; border-radius: 4px; transition: all 0.15s; }
+  .modal-close:hover { color: var(--ink); background: var(--cream-dark); }
+  .modal-body { padding: 20px 24px; }
+  .detail-row { display: grid; grid-template-columns: 140px 1fr; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--cream); align-items: start; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { font-size: 12px; font-weight: 700; color: var(--ink-mute); }
+  .detail-value { font-size: 14px; line-height: 1.6; }
+  .detail-value.highlight { background: var(--gold-pale); border-left: 3px solid var(--gold); padding: 8px 12px; border-radius: 0 4px 4px 0; font-size: 13px; }
+
+  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(245,240,234,0.85); z-index: 500; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+  .loading-overlay.show { display: flex; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--cream-deep); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--cream); padding: 12px 28px; border-radius: 24px; font-size: 14px; opacity: 0; transition: opacity 0.25s, transform 0.25s; z-index: 1000; box-shadow: var(--shadow-lg); pointer-events: none; white-space: nowrap; border-left: 4px solid var(--gold); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── SETTINGS MODAL ── */
+  .settings-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,23,20,0.55); z-index: 300; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; }
+  .settings-modal-overlay.open { display: flex; }
+  .settings-modal { background: var(--white); border-radius: 14px; max-width: 560px; width: 100%; box-shadow: var(--shadow-lg); margin: auto; }
+  .settings-modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--cream-dark); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--white); border-radius: 14px 14px 0 0; z-index: 1; }
+  .settings-modal-header h3 { font-family: 'Playfair Display', serif; font-size: 20px; }
+  .settings-modal-body { padding: 20px 24px 28px; }
+  .settings-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--cream-dark); border-radius: 8px; padding: 4px; }
+  .settings-tab { flex: 1; padding: 8px 6px; background: none; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; color: var(--ink-mute); font-weight: 500; transition: all 0.15s; text-align: center; }
+  .settings-tab:hover { color: var(--ink); }
+  .settings-tab.active { background: var(--white); color: var(--ink); box-shadow: var(--shadow); font-weight: 700; }
+  .settings-panel { display: none; }
+  .settings-panel.active { display: block; }
+  .settings-section-label { font-size: 11px; font-weight: 700; color: var(--ink-mute); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+  .item-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .item-row { display: flex; align-items: center; gap: 8px; background: var(--cream); border-radius: var(--radius-sm); padding: 8px 10px; border: 1px solid var(--cream-deep); }
+  .item-row input[type="text"] { flex: 1; border: none; background: none; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; color: var(--ink); outline: none; min-width: 0; }
+  .item-row input[type="text"]:focus { color: var(--ink); }
+  .item-row .drag-handle { color: var(--ink-mute); cursor: grab; font-size: 14px; flex-shrink: 0; user-select: none; }
+  .item-row .remove-btn { background: none; border: none; color: var(--ink-mute); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
+  .item-row .remove-btn:hover { color: var(--red); background: #fde8e8; }
+  .add-item-row { display: flex; gap: 8px; }
+  .add-item-input { flex: 1; padding: 9px 12px; border: 1.5px dashed var(--cream-deep); border-radius: var(--radius-sm); font-size: 14px; font-family: 'Noto Sans JP', sans-serif; background: var(--cream); color: var(--ink); outline: none; transition: border-color 0.15s; }
+  .add-item-input:focus { border-color: var(--gold); border-style: solid; }
+  .add-item-btn { padding: 9px 16px; background: var(--gold); color: var(--ink); border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; transition: background 0.15s; white-space: nowrap; }
+  .add-item-btn:hover { background: var(--gold-light); }
+  .settings-save-btn { width: 100%; padding: 13px; background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius); font-size: 14px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; letter-spacing: 0.06em; transition: background 0.18s; margin-top: 20px; }
+  .settings-save-btn:hover { background: var(--ink-soft); }
+  .settings-note { font-size: 12px; color: var(--ink-mute); line-height: 1.6; margin-top: 8px; padding: 10px 12px; background: var(--cream); border-radius: var(--radius-sm); }
+
+  @media (max-width: 768px) { .search-grid { grid-template-columns: 1fr 1fr; } .list-wrap { padding: 12px 12px 60px; } .header { padding: 0 12px; } .header-brand { font-size: 15px; } }
+  @media (max-width: 540px) { .search-grid { grid-template-columns: 1fr; } .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="setup-screen" id="setup-screen">
+  <div class="setup-box">
+    <div class="setup-logo">Closet Archive <span>初期設定（Firebase接続）</span></div>
+    <div class="setup-title">Firebase の設定情報を入力</div>
+    <div class="setup-desc">複数デバイスでのリアルタイム共有に必要な設定です。一度入力するとブラウザに保存され、次回以降は不要です。</div>
+    <div class="setup-step">
+      <div class="setup-step-num">取得場所</div>
+      <div class="setup-step-text">
+        <a href="https://console.firebase.google.com/" target="_blank">Firebaseコンソール</a> →「プロジェクトの設定」→「マイアプリ」→ firebaseConfig の各値をコピーしてください。
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <label class="setup-input-label">API Key</label>
+      <input class="setup-input" id="cfg-apiKey" placeholder="AIzaSy...">
+      <label class="setup-input-label">Auth Domain</label>
+      <input class="setup-input" id="cfg-authDomain" placeholder="your-project.firebaseapp.com">
+      <label class="setup-input-label">Database URL</label>
+      <input class="setup-input" id="cfg-databaseURL" placeholder="https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app">
+      <label class="setup-input-label">Project ID</label>
+      <input class="setup-input" id="cfg-projectId" placeholder="your-project-id">
+      <div class="setup-error" id="setup-error">入力内容を確認してください。Database URLは「https://」から始まる完全なURLが必要です。</div>
+      <button class="setup-btn" onclick="saveConfig()">設定を保存して接続する</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div style="font-size:13px;color:var(--ink-soft)">Firebaseに接続中...</div>
+</div>
+
+<header class="header">
+  <div class="header-left">
+    <div class="header-brand">Closet Archive <span>顧客台帳システム</span></div>
+    <div class="sync-label"><span class="sync-dot" id="sync-dot"></span><span id="sync-text">接続中...</span></div>
+  </div>
+  <nav class="header-nav">
+    <button class="nav-btn active" id="nav-register" onclick="switchView('register')">＋ 新規登録</button>
+    <button class="nav-btn" id="nav-list" onclick="switchView('list')">顧客一覧</button>
+    <button class="settings-btn" onclick="openSettings()">⚙ 設定</button>
+  </nav>
+</header>
+
+<div id="view-register" class="view active">
+  <div class="register-wrap">
+    <div class="section-card">
+      <div class="section-title">1. 基本情報</div>
+      <div class="two-col">
+        <div class="field"><label class="field-label">お名前 <span class="req">*</span></label><input type="text" id="r-name" placeholder="山田 花子"></div>
+        <div class="field"><label class="field-label">ふりがな <span class="req">*</span></label><input type="text" id="r-kana" placeholder="やまだ はなこ"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label class="field-label">年代</label>
+          <select id="r-age"><option value="">選択</option><option>10代</option><option>20代</option><option>30代</option><option>40代</option><option>50代</option><option>60代以上</option></select>
+        </div>
+        <div class="field"><label class="field-label">性別</label>
+          <select id="r-gender"><option value="">選択</option><option>女性</option><option>男性</option><option>その他</option></select>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label class="field-label">電話番号</label><input type="text" id="r-phone" placeholder="090-0000-0000"></div>
+        <div class="field"><label class="field-label">来店日 <span class="req">*</span></label><input type="date" id="r-date"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label class="field-label">対応スタッフ</label><select id="r-staff"><option value="">選択</option></select></div>
+        <div class="field"><label class="field-label">買取結果</label>
+          <select id="r-result"><option value="">選択</option><option>成立</option><option>不成立</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">2. きっかけ</div>
+      <div class="field"><label class="field-label">来店のきっかけ</label>
+        <div class="check-group" id="r-trigger-group">
+          <label><input type="checkbox" value="チラシ"><span>チラシ</span></label>
+          <label><input type="checkbox" value="SNS"><span>SNS</span></label>
+          <label><input type="checkbox" value="知人の紹介"><span>知人の紹介</span></label>
+          <label><input type="checkbox" value="通りすがり"><span>通りすがり</span></label>
+          <label><input type="checkbox" value="Googleマップ"><span>Googleマップ</span></label>
+          <label><input type="checkbox" value="その他" id="trigger-other-cb"><span>その他</span></label>
+        </div>
+        <div class="conditional-field" id="trigger-other-wrap"><input type="text" id="r-trigger-other" placeholder="その他の詳細"></div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">3. ライフスタイル</div>
+      <div class="field"><label class="field-label">よく買うエリア</label><input type="text" id="r-area" placeholder="渋谷・表参道など"></div>
+      <div class="field"><label class="field-label">よく買うブランド・テイスト</label><input type="text" id="r-brand" placeholder="例: シャネル・フェミニン系"></div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">4. 手放す理由・感情 <span class="star">★</span></div>
+      <div class="field"><label class="field-label">手放す主な理由</label>
+        <div class="check-group" id="r-reason-group">
+          <label><input type="checkbox" value="サイズの変化"><span>サイズの変化</span></label>
+          <label><input type="checkbox" value="テイストの変化"><span>テイストの変化</span></label>
+          <label><input type="checkbox" value="断捨離・整理"><span>断捨離・整理</span></label>
+          <label><input type="checkbox" value="他店での不満"><span>他店での不満</span></label>
+          <label><input type="checkbox" value="その他" id="reason-other-cb"><span>その他</span></label>
+        </div>
+        <div class="conditional-field" id="reason-other-wrap"><input type="text" id="r-reason-other" placeholder="その他の理由"></div>
+      </div>
+      <div class="field"><label class="field-label">特記事項（感情・メモ）</label><textarea id="r-memo" class="large" placeholder="顧客の悩み、感情、接客でのエピソードなど自由に記述"></textarea></div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">5. 家族構成</div>
+      <div class="field"><label class="field-label">家族の服の有無</label>
+        <div class="check-group">
+          <label><input type="checkbox" id="r-family-husband"><span>旦那様の服ありそう</span></label>
+          <label><input type="checkbox" id="r-family-kids"><span>子供服ありそう</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">6. LINE登録</div>
+      <div class="field"><label class="field-label">LINE登録状況</label>
+        <div class="radio-group">
+          <label><input type="radio" name="r-line" value="◯"><span>◯ 登録済み</span></label>
+          <label><input type="radio" name="r-line" value="✕"><span>✕ 未登録</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">7. 次回アプローチ</div>
+      <div class="field"><label class="field-label">次回へのアプローチ</label>
+        <div class="check-group" id="r-approach-group">
+          <label><input type="checkbox" value="家族の服も査定できる旨を伝えた"><span>家族服査定の案内</span></label>
+          <label><input type="checkbox" value="チラシを渡した"><span>チラシを渡した</span></label>
+          <label><input type="checkbox" value="その他" id="approach-other-cb"><span>その他</span></label>
+        </div>
+        <div class="conditional-field" id="approach-other-wrap"><input type="text" id="r-approach-other" placeholder="その他のアプローチ詳細"></div>
+      </div>
+    </div>
+    <button class="submit-btn" id="submit-btn" onclick="submitForm()">登録する</button>
+  </div>
+</div>
+
+<div id="view-list" class="view">
+  <div class="list-wrap">
+    <div class="list-toolbar">
+      <div class="toolbar-top">
+        <div class="toolbar-title">顧客台帳</div>
+        <div class="toolbar-count" id="record-count">0 件</div>
+      </div>
+      <div class="search-grid">
+        <div class="search-field"><label>来店日（期間）</label>
+          <div class="date-range"><input type="date" id="s-date-from"><span>〜</span><input type="date" id="s-date-to"></div>
+        </div>
+        <div class="search-field"><label>お名前（部分一致）</label><input type="text" id="s-name" placeholder="名前を入力"></div>
+        <div class="search-field"><label>対応スタッフ</label><select id="s-staff"><option value="">すべて</option></select></div>
+        <div class="search-field"><label>電話番号（部分一致）</label><input type="text" id="s-phone" placeholder="番号を入力"></div>
+        <div><button class="clear-btn" onclick="clearSearch()">クリア</button></div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th onclick="sortTable('date')" id="th-date">来店日 ↕</th>
+          <th onclick="sortTable('kana')" id="th-kana">ふりがな / お名前 ↕</th>
+          <th>年代</th><th>性別</th><th>電話番号</th><th>スタッフ</th>
+          <th>買取結果</th><th>手放す理由</th><th>特記事項（感情）</th><th>LINE</th><th>操作</th>
+        </tr></thead>
+        <tbody id="list-tbody"></tbody>
+      </table>
+      <div id="empty-state" class="empty-state" style="display:none"><div class="icon">📋</div><p>該当する顧客データがありません</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="detail-modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-name">顧客詳細</h3><button class="modal-close" onclick="closeDetailModal()">✕</button></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="settings-modal-overlay" id="settings-modal" onclick="closeSettingsOutside(event)">
+  <div class="settings-modal">
+    <div class="settings-modal-header">
+      <h3>設定</h3>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-modal-body">
+      <div class="settings-tabs">
+        <button class="settings-tab active" onclick="switchSettingsTab('staff',this)">スタッフ</button>
+        <button class="settings-tab" onclick="switchSettingsTab('triggers',this)">来店きっかけ</button>
+        <button class="settings-tab" onclick="switchSettingsTab('reasons',this)">手放す理由</button>
+        <button class="settings-tab" onclick="switchSettingsTab('approaches',this)">次回アプローチ</button>
+      </div>
+
+      <!-- スタッフ -->
+      <div class="settings-panel active" id="panel-staff">
+        <div class="settings-section-label">スタッフ一覧</div>
+        <div class="item-list" id="list-staff"></div>
+        <div class="add-item-row">
+          <input class="add-item-input" id="new-staff-input" placeholder="新しいスタッフ名を入力" onkeydown="if(event.key==='Enter')addSettingsItem('staff')">
+          <button class="add-item-btn" onclick="addSettingsItem('staff')">＋ 追加</button>
+        </div>
+        <div class="settings-note">※ 登録フォームのスタッフ選択プルダウンに反映されます。削除しても過去の登録データは変わりません。</div>
+      </div>
+
+      <!-- 来店きっかけ -->
+      <div class="settings-panel" id="panel-triggers">
+        <div class="settings-section-label">来店きっかけの選択肢</div>
+        <div class="item-list" id="list-triggers"></div>
+        <div class="add-item-row">
+          <input class="add-item-input" id="new-triggers-input" placeholder="新しい選択肢を入力" onkeydown="if(event.key==='Enter')addSettingsItem('triggers')">
+          <button class="add-item-btn" onclick="addSettingsItem('triggers')">＋ 追加</button>
+        </div>
+        <div class="settings-note">※「その他」は常に表示されます。ここでは追加項目のみ管理してください。</div>
+      </div>
+
+      <!-- 手放す理由 -->
+      <div class="settings-panel" id="panel-reasons">
+        <div class="settings-section-label">手放す理由の選択肢</div>
+        <div class="item-list" id="list-reasons"></div>
+        <div class="add-item-row">
+          <input class="add-item-input" id="new-reasons-input" placeholder="新しい選択肢を入力" onkeydown="if(event.key==='Enter')addSettingsItem('reasons')">
+          <button class="add-item-btn" onclick="addSettingsItem('reasons')">＋ 追加</button>
+        </div>
+        <div class="settings-note">※「その他」は常に表示されます。ここでは追加項目のみ管理してください。</div>
+      </div>
+
+      <!-- 次回アプローチ -->
+      <div class="settings-panel" id="panel-approaches">
+        <div class="settings-section-label">次回アプローチの選択肢</div>
+        <div class="item-list" id="list-approaches"></div>
+        <div class="add-item-row">
+          <input class="add-item-input" id="new-approaches-input" placeholder="新しい選択肢を入力" onkeydown="if(event.key==='Enter')addSettingsItem('approaches')">
+          <button class="add-item-btn" onclick="addSettingsItem('approaches')">＋ 追加</button>
+        </div>
+        <div class="settings-note">※「その他」は常に表示されます。ここでは追加項目のみ管理してください。</div>
+      </div>
+
+      <button class="settings-save-btn" onclick="saveSettings()">変更を保存する</button>
+      <div style="text-align:center;margin-top:14px">
+        <button onclick="resetConfig()" style="background:none;border:none;color:var(--ink-mute);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'Noto Sans JP',sans-serif;">Firebase接続設定をリセット</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var db = null, customers = {}, staffList = [], sortKey = 'date', sortAsc = false, editingCell = null, toastTimer = null;
+
+// マスターデータ（Firebase管理）
+var masterData = {
+  staff: [],
+  triggers: ['チラシ','SNS','知人の紹介','通りすがり','Googleマップ'],
+  reasons: ['サイズの変化','テイストの変化','断捨離・整理','他店での不満'],
+  approaches: ['家族の服も査定できる旨を伝えた','チラシを渡した']
+};
+var settingsCurrentTab = 'staff';
+// 編集中の一時データ
+var settingsDraft = {};
+
+// ── 設定モーダル ──
+function openSettings() {
+  if(!db){showToast('⚠️ Firebaseに接続してから設定を開いてください');return;}
+  // Firebase から最新マスターを読んでドラフトにコピー
+  settingsDraft = {
+    staff: staffList.slice(),
+    triggers: masterData.triggers.slice(),
+    reasons: masterData.reasons.slice(),
+    approaches: masterData.approaches.slice()
+  };
+  renderSettingsPanel('staff');
+  switchSettingsTab('staff', document.querySelector('.settings-tab'));
+  document.getElementById('settings-modal').classList.add('open');
+}
+
+function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+function closeSettingsOutside(e) { if(e.target===document.getElementById('settings-modal')) closeSettings(); }
+
+function switchSettingsTab(tab, btn) {
+  settingsCurrentTab = tab;
+  document.querySelectorAll('.settings-panel').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('panel-'+tab).classList.add('active');
+  document.querySelectorAll('.settings-tab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderSettingsPanel(tab);
+}
+
+function renderSettingsPanel(tab) {
+  var list = document.getElementById('list-'+tab);
+  if(!list) return;
+  var items = settingsDraft[tab] || [];
+  list.innerHTML = '';
+  items.forEach(function(item, idx) {
+    var row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML =
+      '<span class="drag-handle">☰</span>'+
+      '<input type="text" value="'+escHtml(item)+'" data-tab="'+tab+'" data-idx="'+idx+'">'+
+      '<button class="remove-btn" data-tab="'+tab+'" data-idx="'+idx+'" title="削除">✕</button>';
+    // 名前変更
+    row.querySelector('input').addEventListener('input', function() {
+      settingsDraft[this.dataset.tab][parseInt(this.dataset.idx)] = this.value;
+    });
+    // 削除
+    row.querySelector('.remove-btn').addEventListener('click', function() {
+      var t=this.dataset.tab, i=parseInt(this.dataset.idx);
+      if(settingsDraft[t].length<=1){showToast('⚠️ 最低1件は必要です');return;}
+      settingsDraft[t].splice(i,1);
+      renderSettingsPanel(t);
+    });
+    list.appendChild(row);
+  });
+}
+
+function addSettingsItem(tab) {
+  var input = document.getElementById('new-'+tab+'-input');
+  var val = input.value.trim();
+  if(!val){input.focus();return;}
+  if(settingsDraft[tab].indexOf(val)!==-1){showToast('⚠️ 同じ名前がすでにあります');return;}
+  settingsDraft[tab].push(val);
+  input.value='';
+  renderSettingsPanel(tab);
+  showToast('追加しました（保存ボタンで確定）');
+}
+
+function saveSettings() {
+  if(!db){showToast('⚠️ Firebase未接続');return;}
+  var btn = document.querySelector('.settings-save-btn');
+  btn.disabled=true; btn.textContent='保存中...';
+  setSyncStatus('syncing');
+
+  // staff → /staff に保存
+  var staffObj={};
+  settingsDraft.staff.forEach(function(s,i){staffObj['s'+i]=s;});
+
+  // その他の選択肢 → /masterData に保存
+  var updates = {
+    '/staff': staffObj,
+    '/masterData/triggers': settingsDraft.triggers,
+    '/masterData/reasons': settingsDraft.reasons,
+    '/masterData/approaches': settingsDraft.approaches
+  };
+
+  db.ref().update(updates).then(function(){
+    showToast('✓ 設定を保存しました');
+    closeSettings();
+  }).catch(function(e){
+    showToast('⚠️ 保存に失敗しました: '+e.message);
+    setSyncStatus('error');
+  }).finally(function(){
+    btn.disabled=false; btn.textContent='変更を保存する';
+  });
+}
+
+function getSavedConfig() { try { return JSON.parse(localStorage.getItem('fb_config')||'null'); } catch(e) { return null; } }
+
+function saveConfig() {
+  var apiKey = document.getElementById('cfg-apiKey').value.trim();
+  var authDomain = document.getElementById('cfg-authDomain').value.trim();
+  var databaseURL = document.getElementById('cfg-databaseURL').value.trim();
+  var projectId = document.getElementById('cfg-projectId').value.trim();
+  var errEl = document.getElementById('setup-error');
+  if (!apiKey || !databaseURL || !projectId) { errEl.classList.add('show'); return; }
+  if (databaseURL.indexOf('https://') !== 0) { errEl.classList.add('show'); return; }
+  errEl.classList.remove('show');
+  localStorage.setItem('fb_config', JSON.stringify({apiKey:apiKey,authDomain:authDomain,databaseURL:databaseURL,projectId:projectId}));
+  document.getElementById('setup-screen').classList.remove('show');
+  initFirebase({apiKey:apiKey,authDomain:authDomain,databaseURL:databaseURL,projectId:projectId});
+}
+
+function resetConfig() {
+  if (confirm('Firebase設定をリセットしますか？')) { localStorage.removeItem('fb_config'); location.reload(); }
+}
+
+function initFirebase(config) {
+  document.getElementById('loading-overlay').classList.add('show');
+  try {
+    firebase.initializeApp(config);
+    db = firebase.database();
+    db.ref('staff').on('value', function(snap) {
+      var data = snap.val();
+      if (data) { staffList = Object.values(data); }
+      else { staffList = ['田中','佐藤','鈴木','山田','伊藤']; var s={}; staffList.forEach(function(n,i){s['s'+i]=n;}); db.ref('staff').set(s); }
+      populateStaffSelects();
+    });
+    db.ref('masterData').on('value', function(snap) {
+      var data = snap.val();
+      if(data) {
+        if(data.triggers) masterData.triggers = data.triggers;
+        if(data.reasons) masterData.reasons = data.reasons;
+        if(data.approaches) masterData.approaches = data.approaches;
+      } else {
+        // 初回: デフォルト値を保存
+        db.ref('masterData').set({
+          triggers: masterData.triggers,
+          reasons: masterData.reasons,
+          approaches: masterData.approaches
+        });
+      }
+      rebuildCheckGroups();
+    });
+    db.ref('customers').on('value', function(snap) {
+      document.getElementById('loading-overlay').classList.remove('show');
+      setSyncStatus('connected');
+      customers = snap.val() || {};
+      renderList();
+    }, function(err) {
+      document.getElementById('loading-overlay').classList.remove('show');
+      setSyncStatus('error');
+      showToast('⚠️ 接続エラー: ' + err.message);
+    });
+  } catch(e) {
+    document.getElementById('loading-overlay').classList.remove('show');
+    setSyncStatus('error');
+    showToast('⚠️ 初期化エラー: ' + e.message);
+  }
+}
+
+function setSyncStatus(s) {
+  document.getElementById('sync-dot').className = 'sync-dot ' + s;
+  document.getElementById('sync-text').textContent = s==='connected'?'リアルタイム同期中':s==='syncing'?'同期中...':'接続エラー';
+}
+
+// 起動
+document.getElementById('r-date').value = new Date().toISOString().split('T')[0];
+(function() {
+  [['trigger-other-cb','trigger-other-wrap'],['reason-other-cb','reason-other-wrap'],['approach-other-cb','approach-other-wrap']].forEach(function(p) {
+    var cb=document.getElementById(p[0]),wrap=document.getElementById(p[1]);
+    if(cb&&wrap) cb.addEventListener('change',function(){wrap.classList.toggle('show',cb.checked);});
+  });
+  ['s-date-from','s-date-to','s-name','s-staff','s-phone'].forEach(function(id) {
+    var el=document.getElementById(id);
+    if(el){el.addEventListener('input',renderList);el.addEventListener('change',renderList);}
+  });
+  var cfg = getSavedConfig();
+  if(cfg) { initFirebase(cfg); } else { document.getElementById('setup-screen').classList.add('show'); }
+})();
+
+function populateStaffSelects() {
+  ['r-staff','s-staff'].forEach(function(id) {
+    var el=document.getElementById(id); if(!el) return;
+    var isR=id==='r-staff';
+    var h=isR?'<option value="">選択してください</option>':'<option value="">すべて</option>';
+    staffList.forEach(function(s){h+='<option>'+s+'</option>';});
+    if(isR) h+='<option value="__add__">＋ スタッフを追加</option>';
+    el.innerHTML=h;
+  });
+  var rs=document.getElementById('r-staff');
+  if(rs&&!rs._bound){rs._bound=true;rs.addEventListener('change',function(){
+    if(this.value==='__add__'){
+      var n=prompt('新しいスタッフ名：');
+      if(n&&n.trim()&&db){db.ref('staff').push(n.trim());var self=this;setTimeout(function(){self.value=n.trim();},600);}
+      else this.value='';
+    }
+  });}
+}
+
+function rebuildCheckGroups() {
+  rebuildGroup('r-trigger-group', masterData.triggers, 'trigger-other-cb', 'trigger-other-wrap');
+  rebuildGroup('r-reason-group', masterData.reasons, 'reason-other-cb', 'reason-other-wrap');
+  rebuildGroup('r-approach-group', masterData.approaches, 'approach-other-cb', 'approach-other-wrap');
+}
+
+function rebuildGroup(groupId, items, otherCbId, otherWrapId) {
+  var group = document.getElementById(groupId);
+  if(!group) return;
+  // 現在チェック済みの値を保持
+  var checked = Array.from(group.querySelectorAll('input:checked')).map(function(el){return el.value;});
+  group.innerHTML = '';
+  items.forEach(function(item) {
+    var lbl = document.createElement('label');
+    var inp = document.createElement('input');
+    inp.type='checkbox'; inp.value=item;
+    if(checked.indexOf(item)!==-1) inp.checked=true;
+    var sp=document.createElement('span'); sp.textContent=item;
+    lbl.appendChild(inp); lbl.appendChild(sp);
+    group.appendChild(lbl);
+  });
+  // 「その他」を末尾に追加
+  var othLbl=document.createElement('label');
+  var othInp=document.createElement('input');
+  othInp.type='checkbox'; othInp.value='その他'; othInp.id=otherCbId;
+  if(checked.indexOf('その他')!==-1) othInp.checked=true;
+  var othSp=document.createElement('span'); othSp.textContent='その他';
+  othLbl.appendChild(othInp); othLbl.appendChild(othSp);
+  group.appendChild(othLbl);
+  // 条件表示の再バインド
+  var wrap=document.getElementById(otherWrapId);
+  if(wrap){
+    wrap.classList.toggle('show', othInp.checked);
+    othInp.addEventListener('change',function(){wrap.classList.toggle('show',othInp.checked);});
+  }
+}
+
+function getChecked(gid) {
+  return Array.from(document.querySelectorAll('#'+gid+' input[type=checkbox]:checked')).map(function(e){return e.value;});
+}
+
+function submitForm() {
+  if(!db){showToast('⚠️ Firebaseに接続されていません');return;}
+  var name=document.getElementById('r-name').value.trim();
+  var kana=document.getElementById('r-kana').value.trim();
+  var date=document.getElementById('r-date').value;
+  if(!name||!kana||!date){showToast('⚠️ 必須項目（名前・ふりがな・来店日）を入力してください');return;}
+  var btn=document.getElementById('submit-btn');
+  btn.disabled=true; btn.textContent='登録中...'; setSyncStatus('syncing');
+  var triggers=getChecked('r-trigger-group'), reasons=getChecked('r-reason-group'), approaches=getChecked('r-approach-group');
+  function replaceOther(arr, field) {
+    var i=arr.indexOf('その他'); if(i===-1) return arr;
+    var r=arr.filter(function(x){return x!=='その他';}); r.push('その他:'+document.getElementById(field).value); return r;
+  }
+  triggers=replaceOther(triggers,'r-trigger-other');
+  reasons=replaceOther(reasons,'r-reason-other');
+  approaches=replaceOther(approaches,'r-approach-other');
+  var lineEl=document.querySelector('input[name="r-line"]:checked');
+  var customer={
+    name:name,kana:kana,age:document.getElementById('r-age').value,gender:document.getElementById('r-gender').value,
+    phone:document.getElementById('r-phone').value.trim(),date:date,staff:document.getElementById('r-staff').value,
+    result:document.getElementById('r-result').value,triggers:triggers,area:document.getElementById('r-area').value.trim(),
+    brand:document.getElementById('r-brand').value.trim(),reasons:reasons,memo:document.getElementById('r-memo').value.trim(),
+    familyHusband:document.getElementById('r-family-husband').checked,familyKids:document.getElementById('r-family-kids').checked,
+    line:lineEl?lineEl.value:'',approaches:approaches,createdAt:Date.now()
+  };
+  db.ref('customers').push(customer).then(function(){
+    showToast('✓ 登録が完了しました'); resetForm();
+  }).catch(function(e){
+    showToast('⚠️ 登録に失敗しました: '+e.message); setSyncStatus('error');
+  }).finally(function(){ btn.disabled=false; btn.textContent='登録する'; });
+}
+
+function resetForm() {
+  ['r-name','r-kana','r-phone','r-area','r-brand','r-trigger-other','r-reason-other','r-approach-other'].forEach(function(id){document.getElementById(id).value='';});
+  ['r-age','r-gender','r-staff','r-result'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('r-memo').value='';
+  document.querySelectorAll('#view-register input[type=checkbox]').forEach(function(cb){cb.checked=false;});
+  document.querySelectorAll('#view-register input[type=radio]').forEach(function(rb){rb.checked=false;});
+  ['trigger-other-wrap','reason-other-wrap','approach-other-wrap'].forEach(function(id){document.getElementById(id).classList.remove('show');});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function getFiltered() {
+  var df=document.getElementById('s-date-from').value, dt=document.getElementById('s-date-to').value;
+  var nq=document.getElementById('s-name').value.toLowerCase(), sq=document.getElementById('s-staff').value;
+  var pq=document.getElementById('s-phone').value.replace(/[-\s]/g,'');
+  return Object.entries(customers).filter(function(e) {
+    var c=e[1];
+    if(df&&c.date<df)return false; if(dt&&c.date>dt)return false;
+    if(nq&&(c.name||'').toLowerCase().indexOf(nq)===-1&&(c.kana||'').toLowerCase().indexOf(nq)===-1)return false;
+    if(sq&&c.staff!==sq)return false;
+    if(pq&&(c.phone||'').replace(/[-\s]/g,'').indexOf(pq)===-1)return false;
+    return true;
+  });
+}
+
+function renderList() {
+  var data=getFiltered();
+  data.sort(function(a,b){var av=a[1][sortKey]||'',bv=b[1][sortKey]||'';return sortAsc?(av<bv?-1:av>bv?1:0):(av>bv?-1:av<bv?1:0);});
+  document.getElementById('record-count').textContent=data.length+' 件';
+  var tbody=document.getElementById('list-tbody'); tbody.innerHTML='';
+  document.getElementById('empty-state').style.display=data.length===0?'block':'none';
+  data.forEach(function(entry) {
+    var k=entry[0],c=entry[1];
+    var rb=(c.reasons||[]).map(function(r){return '<span class="badge badge-gold">'+escHtml(r)+'</span>';}).join(' ');
+    var tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td><span class="editable" data-key="'+k+'" data-field="date" data-type="date">'+escHtml(c.date||'')+'</span></td>'+
+      '<td><span class="editable" data-key="'+k+'" data-field="kana" data-type="text" style="font-size:11px;color:var(--ink-mute)">'+escHtml(c.kana||'')+'</span>'+
+          '<span class="editable" data-key="'+k+'" data-field="name" data-type="text" style="font-weight:500">'+escHtml(c.name||'')+'</span></td>'+
+      '<td><span class="editable" data-key="'+k+'" data-field="age" data-type="select" data-opts="[&quot;&quot;,&quot;10代&quot;,&quot;20代&quot;,&quot;30代&quot;,&quot;40代&quot;,&quot;50代&quot;,&quot;60代以上&quot;]">'+escHtml(c.age||'')+'</span></td>'+
+      '<td><span class="editable" data-key="'+k+'" data-field="gender" data-type="select" data-opts="[&quot;&quot;,&quot;女性&quot;,&quot;男性&quot;,&quot;その他&quot;]">'+escHtml(c.gender||'')+'</span></td>'+
+      '<td><span class="editable" data-key="'+k+'" data-field="phone" data-type="text">'+escHtml(c.phone||'')+'</span></td>'+
+      '<td><span class="editable" data-key="'+k+'" data-field="staff" data-type="staff">'+escHtml(c.staff||'')+'</span></td>'+
+      '<td>'+(c.result==='成立'?'<span class="badge badge-success">成立</span>':c.result==='不成立'?'<span class="badge badge-fail">不成立</span>':'')+'</td>'+
+      '<td style="max-width:140px"><span style="font-size:11px;line-height:1.8">'+rb+'</span></td>'+
+      '<td class="memo-cell"><div class="memo-preview editable" data-key="'+k+'" data-field="memo" data-type="textarea">'+(c.memo?escHtml(c.memo):'<span style="color:var(--ink-mute);font-style:italic;font-size:11px">未記入</span>')+'</div></td>'+
+      '<td><span class="editable" data-key="'+k+'" data-field="line" data-type="select" data-opts="[&quot;&quot;,&quot;◯&quot;,&quot;✕&quot;]">'+escHtml(c.line||'')+'</span></td>'+
+      '<td class="action-cell">'+
+        '<button class="action-btn" data-detail="'+k+'">詳細</button> '+
+        '<button class="action-btn danger" data-delete="'+k+'">削除</button>'+
+      '</td>';
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.editable').forEach(function(el){el.addEventListener('click',onEditableClick);});
+  tbody.querySelectorAll('[data-detail]').forEach(function(el){el.addEventListener('click',function(){showDetail(this.dataset.detail);});});
+  tbody.querySelectorAll('[data-delete]').forEach(function(el){el.addEventListener('click',function(){deleteCustomer(this.dataset.delete);});});
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function onEditableClick(e) {
+  var span=e.currentTarget, k=span.dataset.key, field=span.dataset.field, type=span.dataset.type;
+  if(editingCell) finishEdit();
+  editingCell={span:span,fbKey:k,field:field};
+  var c=customers[k], val=c?(c[field]||''):'';
+  var input;
+  if(type==='textarea') {
+    input=document.createElement('textarea'); input.className='editable-textarea'; input.value=val;
+  } else if(type==='select') {
+    var opts=JSON.parse(span.dataset.opts.replace(/&quot;/g,'"'));
+    input=document.createElement('select'); input.className='editable-select';
+    opts.forEach(function(o){var op=document.createElement('option');op.value=o;op.textContent=o||'—';if(o===val)op.selected=true;input.appendChild(op);});
+  } else if(type==='staff') {
+    input=document.createElement('select'); input.className='editable-select';
+    [''].concat(staffList).forEach(function(o){var op=document.createElement('option');op.value=o;op.textContent=o||'—';if(o===val)op.selected=true;input.appendChild(op);});
+  } else {
+    input=document.createElement('input'); input.type=type; input.className='editable-input'; input.value=val;
+  }
+  input.addEventListener('blur',finishEdit);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter'&&type!=='textarea'){e.preventDefault();finishEdit();}if(e.key==='Escape'){editingCell=null;renderList();}});
+  span.innerHTML=''; span.appendChild(input); input.focus();
+  if(input.select&&type!=='textarea')input.select();
+}
+
+function finishEdit() {
+  if(!editingCell)return;
+  var s=editingCell; editingCell=null;
+  var input=s.span.querySelector('input,select,textarea');
+  if(!input||!db)return;
+  var val=input.value, upd={}; upd[s.field]=val;
+  setSyncStatus('syncing');
+  db.ref('customers/'+s.fbKey).update(upd).then(function(){showToast('✓ 更新しました');}).catch(function(e){showToast('⚠️ 更新失敗: '+e.message);setSyncStatus('error');});
+}
+
+function sortTable(key) {
+  if(sortKey===key)sortAsc=!sortAsc;else{sortKey=key;sortAsc=true;}
+  document.querySelectorAll('thead th').forEach(function(t){t.classList.remove('sorted');});
+  var th=document.getElementById('th-'+key); if(th)th.classList.add('sorted');
+  renderList();
+}
+
+function clearSearch() {
+  ['s-date-from','s-date-to','s-name','s-phone'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('s-staff').value=''; renderList();
+}
+
+function deleteCustomer(k) {
+  if(!confirm('この顧客データを削除しますか？'))return;
+  setSyncStatus('syncing');
+  db.ref('customers/'+k).remove().then(function(){showToast('削除しました');}).catch(function(e){showToast('⚠️ 削除失敗');setSyncStatus('error');});
+}
+
+function showDetail(k) {
+  var c=customers[k]; if(!c)return;
+  document.getElementById('modal-name').textContent=c.name;
+  var fam=[]; if(c.familyHusband)fam.push('旦那様の服ありそう'); if(c.familyKids)fam.push('子供服ありそう');
+  var rows=[['来店日',c.date],['ふりがな',c.kana],['年代',c.age],['性別',c.gender],['電話番号',c.phone],
+    ['対応スタッフ',c.staff],['買取結果',c.result?'<span class="badge '+(c.result==='成立'?'badge-success':'badge-fail')+'">'+c.result+'</span>':''],
+    ['来店きっかけ',(c.triggers||[]).join('、')],['よく買うエリア',c.area],['よく買うブランド',c.brand],
+    ['手放す理由',(c.reasons||[]).join('、')],['特記事項（感情）★',c.memo,true],
+    ['家族の服',fam.join('、')],['LINE登録',c.line],['次回アプローチ',(c.approaches||[]).join('、')]];
+  document.getElementById('modal-body').innerHTML=rows.map(function(r){
+    return '<div class="detail-row"><div class="detail-label">'+r[0]+'</div><div class="detail-value'+(r[2]?' highlight':'')+'">'+( r[1]||'—')+'</div></div>';
+  }).join('');
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function closeDetailModal(){document.getElementById('detail-modal').classList.remove('open');}
+function closeModalOutside(e){if(e.target===document.getElementById('detail-modal'))closeDetailModal();}
+
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('nav-'+v).classList.add('active');
+  if(v==='list')renderList();
+}
+
+function showToast(msg) {
+  var el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){el.classList.remove('show');},2500);
+}
+</script>
+</body>
+</html>
