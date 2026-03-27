@@ -299,29 +299,8 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
 </div>
 
 <!-- SETUP -->
-<div class="setup-screen" id="setup-screen">
-  <div class="setup-box">
-    <div class="setup-logo">スタイリストクローゼット <span>初期設定（Firebase接続）</span></div>
-    <div class="setup-title">Firebase の設定情報を入力</div>
-    <div class="setup-desc">複数デバイスでのリアルタイム共有に必要な設定です。一度入力するとブラウザに保存されます。</div>
-    <div class="setup-step">
-      <div class="setup-step-num">取得場所</div>
-      <div class="setup-step-text"><a href="https://console.firebase.google.com/" target="_blank">Firebaseコンソール</a> →「プロジェクトの設定」→「マイアプリ」→ firebaseConfig の各値をコピーしてください。</div>
-    </div>
-    <div style="margin-top:16px">
-      <label class="setup-input-label">API Key</label>
-      <input class="setup-input" id="cfg-apiKey" placeholder="AIzaSy...">
-      <label class="setup-input-label">Auth Domain</label>
-      <input class="setup-input" id="cfg-authDomain" placeholder="your-project.firebaseapp.com">
-      <label class="setup-input-label">Database URL</label>
-      <input class="setup-input" id="cfg-databaseURL" placeholder="https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app">
-      <label class="setup-input-label">Project ID</label>
-      <input class="setup-input" id="cfg-projectId" placeholder="your-project-id">
-      <div class="setup-error" id="setup-error">入力内容を確認してください。Database URLは「https://」から始まる完全なURLが必要です。</div>
-      <button class="setup-btn" onclick="saveConfig()">設定を保存して接続する</button>
-    </div>
-  </div>
-</div>
+<!-- SETUP SCREEN 非表示（設定値は埋め込み済み） -->
+<div class="setup-screen" id="setup-screen" style="display:none!important"></div>
 
 <div class="loading-overlay" id="loading-overlay">
   <div class="spinner"></div>
@@ -632,7 +611,6 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
         <button class="settings-save-btn" onclick="changePassword()" style="margin-top:16px">パスワードを変更する</button>
         <div class="settings-note" style="margin-top:12px">※ 初期パスワードは <strong>closet2024</strong> です。必ず変更してください。<br>※ 変更後は全デバイスで新しいパスワードが必要になります。</div>
       </div>
-      <div style="text-align:center;margin-top:14px"><button onclick="resetConfig()" style="background:none;border:none;color:var(--ink-mute);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'Noto Sans JP',sans-serif;">Firebase接続設定をリセット</button></div>
     </div>
   </div>
 </div>
@@ -668,18 +646,15 @@ function doLogin() {
   errEl.classList.remove('show');
   if (!input) { errEl.classList.add('show'); return; }
 
-  var cfg = getSavedConfig();
-
-  // Firebaseが未接続の場合は先に接続してからパスワード照合
-  if (!db && cfg) {
+  // Firebaseが未接続の場合は先に接続
+  if (!db) {
     try {
-      firebase.initializeApp(cfg);
+      firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.database();
     } catch(e) { /* already initialized */ }
   }
 
   if (!db) {
-    // Firebase接続できない場合は初期パスワードのみ許可
     if (input === DEFAULT_PASSWORD) { onLoginSuccess(); }
     else { errEl.classList.add('show'); document.getElementById('login-password').value = ''; }
     return;
@@ -783,6 +758,14 @@ function onResultChange(){
   document.getElementById('fail-reason-wrap').classList.toggle('show', v==='不成立');
 }
 
+// ══ FIREBASE 設定（直接埋め込み）══
+var FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyDAbBhEKr7xGevcgV4rB8ODkacNINwdFww',
+  authDomain: 'closet-archive-f79d3.firebaseapp.com',
+  databaseURL: 'https://closet-archive-f79d3-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'closet-archive-f79d3'
+};
+
 // ══ BOOT ══
 document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
 (function(){
@@ -790,23 +773,16 @@ document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
     var cb=document.getElementById(p[0]),wrap=document.getElementById(p[1]);
     if(cb&&wrap)cb.addEventListener('change',function(){wrap.classList.toggle('show',cb.checked);});
   });
-  ['s-date-from','s-date-to','s-name','s-staff','s-phone'].forEach(function(id){
+  ['s-date-from','s-date-to','s-name','s-staff'].forEach(function(id){
     var el=document.getElementById(id);
     if(el){el.addEventListener('input',renderList);el.addEventListener('change',renderList);}
   });
-  var cfg=getSavedConfig();
-  if(cfg){
-    if(checkLogin()){
-      // ログイン済み → そのままFirebase接続
-      initFirebase(cfg);
-    } else {
-      // 未ログイン → ログイン画面を先に表示、ログイン後にFirebase接続
-      showLoginScreen();
-      // ログイン成功時にFirebaseを初期化するよう上書き
-      window._pendingFirebaseConfig = cfg;
-    }
+  // 設定値は直接埋め込み済みなので常にFirebase接続
+  if(checkLogin()){
+    initFirebase(FIREBASE_CONFIG);
   } else {
-    document.getElementById('setup-screen').classList.add('show');
+    showLoginScreen();
+    window._pendingFirebaseConfig = FIREBASE_CONFIG;
   }
 })();
 
