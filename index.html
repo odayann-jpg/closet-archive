@@ -49,16 +49,23 @@ body{font-family:'Noto Sans JP',sans-serif;background:#f0f3f8;color:var(--ink);m
 .sync-label{font-size:11px;color:var(--cream-deep);display:flex;align-items:center;}
 
 /* HEADER */
-.header{background:var(--ink);color:var(--cream);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-lg);}
-.header-left{display:flex;align-items:center;gap:16px;}
-.header-brand{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:.04em;color:#7aa3d4;}
-.header-brand span{font-size:11px;font-family:'Noto Sans JP',sans-serif;color:var(--ink-mute);display:block;letter-spacing:.12em;margin-top:-2px;}
-.header-nav{display:flex;gap:4px;}
-.nav-btn{background:none;border:1px solid transparent;color:var(--cream-deep);padding:6px 16px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-family:'Noto Sans JP',sans-serif;transition:all .18s;}
+.header{background:var(--ink);color:var(--cream);padding:0 12px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-lg);gap:8px;}
+.header-left{display:flex;align-items:center;gap:8px;min-width:0;flex-shrink:1;}
+.header-brand{font-family:'Playfair Display',serif;font-size:15px;letter-spacing:.02em;color:#7aa3d4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-brand span{font-size:10px;font-family:'Noto Sans JP',sans-serif;color:var(--ink-mute);display:block;letter-spacing:.08em;margin-top:-2px;}
+.sync-label{display:none;}
+.header-nav{display:flex;gap:3px;flex-shrink:0;}
+.nav-btn{background:none;border:1px solid transparent;color:var(--cream-deep);padding:6px 10px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-family:'Noto Sans JP',sans-serif;transition:all .18s;white-space:nowrap;}
 .nav-btn:hover{border-color:var(--gold);color:#7aa3d4;}
 .nav-btn.active{background:var(--gold);color:var(--white);border-color:var(--gold);font-weight:700;}
-.settings-btn{background:none;border:1px solid rgba(255,255,255,.1);color:var(--ink-mute);padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-family:'Noto Sans JP',sans-serif;transition:all .15s;}
+.settings-btn{background:none;border:1px solid rgba(255,255,255,.1);color:var(--ink-mute);padding:5px 8px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-family:'Noto Sans JP',sans-serif;transition:all .15s;white-space:nowrap;}
 .settings-btn:hover{border-color:var(--gold);color:#7aa3d4;}
+@media(min-width:600px){
+  .header{padding:0 20px;}
+  .header-brand{font-size:18px;}
+  .sync-label{display:flex;}
+  .nav-btn{padding:6px 14px;font-size:13px;}
+}
 
 /* VIEWS */
 .view{display:none;}
@@ -328,10 +335,10 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
     <div class="sync-label"><span class="sync-dot" id="sync-dot"></span><span id="sync-text">接続中...</span></div>
   </div>
   <nav class="header-nav">
-    <button class="nav-btn active" id="nav-register" onclick="switchView('register')">＋ 新規登録</button>
-    <button class="nav-btn" id="nav-list" onclick="switchView('list')">顧客一覧</button>
-    <button class="settings-btn" onclick="openSettings()">⚙ 設定</button>
-    <button class="settings-btn" onclick="logout()" style="margin-left:4px;">ログアウト</button>
+    <button class="nav-btn active" id="nav-register" onclick="switchView('register')">＋ 登録</button>
+    <button class="nav-btn" id="nav-list" onclick="switchView('list')">一覧</button>
+    <button class="settings-btn" onclick="openSettings()">⚙</button>
+    <button class="settings-btn" onclick="logout()" style="margin-left:2px;">出る</button>
   </nav>
 </header>
 
@@ -367,7 +374,39 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
       <div class="two-col">
         <div class="field"><label class="field-label">対応スタッフ</label><select id="r-staff"><option value="">選択</option></select></div>
         <div class="field"><label class="field-label">買取結果</label>
-          <select id="r-result"><option value="">選択</option><option>成立</option><option>不成立</option></select>
+          <select id="r-result" onchange="onResultChange()"><option value="">選択</option><option>成立</option><option>不成立</option></select>
+        </div>
+      </div>
+      <!-- 成立理由 -->
+      <div class="conditional-field" id="success-reason-wrap">
+        <div class="field">
+          <label class="field-label">成立理由</label>
+          <div class="check-group" id="r-success-reason-group">
+            <label><input type="checkbox" value="価格に納得した"><span>価格に納得した</span></label>
+            <label><input type="checkbox" value="スタッフの対応が良かった"><span>スタッフの対応が良かった</span></label>
+            <label><input type="checkbox" value="買取スピードが早い"><span>買取スピードが早い</span></label>
+            <label><input type="checkbox" value="リピート"><span>リピート</span></label>
+            <label><input type="checkbox" value="その他" id="success-reason-other-cb"><span>その他</span></label>
+          </div>
+          <div class="conditional-field" id="success-reason-other-wrap">
+            <input type="text" id="r-success-reason-other" placeholder="その他の成立理由">
+          </div>
+        </div>
+      </div>
+      <!-- 失注理由 -->
+      <div class="conditional-field" id="fail-reason-wrap">
+        <div class="field">
+          <label class="field-label">失注理由</label>
+          <div class="check-group" id="r-fail-reason-group">
+            <label><input type="checkbox" value="価格が合わなかった"><span>価格が合わなかった</span></label>
+            <label><input type="checkbox" value="他店に決めた"><span>他店に決めた</span></label>
+            <label><input type="checkbox" value="持ち帰りたい"><span>持ち帰りたい</span></label>
+            <label><input type="checkbox" value="検討中"><span>検討中</span></label>
+            <label><input type="checkbox" value="その他" id="fail-reason-other-cb"><span>その他</span></label>
+          </div>
+          <div class="conditional-field" id="fail-reason-other-wrap">
+            <input type="text" id="r-fail-reason-other" placeholder="その他の失注理由">
+          </div>
         </div>
       </div>
     </div>
@@ -528,8 +567,10 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
         <button class="settings-tab active" onclick="switchSettingsTab('staff',this)">スタッフ</button>
         <button class="settings-tab" onclick="switchSettingsTab('triggers',this)">来店きっかけ</button>
         <button class="settings-tab" onclick="switchSettingsTab('reasons',this)">手放す理由</button>
-        <button class="settings-tab" onclick="switchSettingsTab('approaches',this)">次回アプローチ</button>
-        <button class="settings-tab" onclick="switchSettingsTab('password',this)">🔑 PW変更</button>
+        <button class="settings-tab" onclick="switchSettingsTab('successReasons',this)">成立理由</button>
+        <button class="settings-tab" onclick="switchSettingsTab('failReasons',this)">失注理由</button>
+        <button class="settings-tab" onclick="switchSettingsTab('approaches',this)">アプローチ</button>
+        <button class="settings-tab" onclick="switchSettingsTab('password',this)">🔑 PW</button>
       </div>
       <div class="settings-panel active" id="panel-staff">
         <div class="settings-section-label">スタッフ一覧</div>
@@ -552,6 +593,18 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
         <div class="settings-section-label">次回アプローチの選択肢</div>
         <div class="item-list" id="list-approaches"></div>
         <div class="add-item-row"><input class="add-item-input" id="new-approaches-input" placeholder="新しい選択肢" onkeydown="if(event.key==='Enter')addSettingsItem('approaches')"><button class="add-item-btn" onclick="addSettingsItem('approaches')">＋ 追加</button></div>
+        <div class="settings-note">※「その他」は常に表示されます。</div>
+      </div>
+      <div class="settings-panel" id="panel-successReasons">
+        <div class="settings-section-label">成立理由の選択肢</div>
+        <div class="item-list" id="list-successReasons"></div>
+        <div class="add-item-row"><input class="add-item-input" id="new-successReasons-input" placeholder="新しい選択肢" onkeydown="if(event.key==='Enter')addSettingsItem('successReasons')"><button class="add-item-btn" onclick="addSettingsItem('successReasons')">＋ 追加</button></div>
+        <div class="settings-note">※「その他」は常に表示されます。</div>
+      </div>
+      <div class="settings-panel" id="panel-failReasons">
+        <div class="settings-section-label">失注理由の選択肢</div>
+        <div class="item-list" id="list-failReasons"></div>
+        <div class="add-item-row"><input class="add-item-input" id="new-failReasons-input" placeholder="新しい選択肢" onkeydown="if(event.key==='Enter')addSettingsItem('failReasons')"><button class="add-item-btn" onclick="addSettingsItem('failReasons')">＋ 追加</button></div>
         <div class="settings-note">※「その他」は常に表示されます。</div>
       </div>
       <button class="settings-save-btn" onclick="saveSettings()">変更を保存する</button>
@@ -583,7 +636,7 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
 <script>
 // ══ STATE ══
 var db=null,customers={},staffList=[],sortKey='lastDate',sortAsc=false,editingCell=null,toastTimer=null;
-var masterData={triggers:['チラシ','SNS','知人の紹介','通りすがり','Googleマップ'],reasons:['サイズの変化','テイストの変化','断捨離・整理','他店での不満'],approaches:['家族の服も査定できる旨を伝えた','チラシを渡した']};
+var masterData={triggers:['チラシ','SNS','知人の紹介','通りすがり','Googleマップ'],reasons:['サイズの変化','テイストの変化','断捨離・整理','他店での不満'],approaches:['家族の服も査定できる旨を伝えた','チラシを渡した'],successReasons:['価格に納得した','スタッフの対応が良かった','買取スピードが早い','リピート'],failReasons:['価格が合わなかった','他店に決めた','持ち帰りたい','検討中']};
 var settingsDraft={},settingsCurrentTab='staff';
 var currentDetailKey=null;
 
@@ -695,8 +748,8 @@ function startFirebaseListeners(){
   });
   db.ref('masterData').on('value',function(snap){
     var d=snap.val();
-    if(d){if(d.triggers)masterData.triggers=d.triggers;if(d.reasons)masterData.reasons=d.reasons;if(d.approaches)masterData.approaches=d.approaches;}
-    else{db.ref('masterData').set({triggers:masterData.triggers,reasons:masterData.reasons,approaches:masterData.approaches});}
+    if(d){if(d.triggers)masterData.triggers=d.triggers;if(d.reasons)masterData.reasons=d.reasons;if(d.approaches)masterData.approaches=d.approaches;if(d.successReasons)masterData.successReasons=d.successReasons;if(d.failReasons)masterData.failReasons=d.failReasons;}
+    else{db.ref('masterData').set({triggers:masterData.triggers,reasons:masterData.reasons,approaches:masterData.approaches,successReasons:masterData.successReasons,failReasons:masterData.failReasons});}
     rebuildCheckGroups();
   });
   db.ref('customers').on('value',function(snap){
@@ -718,10 +771,16 @@ function setSyncStatus(s){
 }
 
 
+function onResultChange(){
+  var v = document.getElementById('r-result').value;
+  document.getElementById('success-reason-wrap').classList.toggle('show', v==='成立');
+  document.getElementById('fail-reason-wrap').classList.toggle('show', v==='不成立');
+}
+
 // ══ BOOT ══
 document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
 (function(){
-  [['trigger-other-cb','trigger-other-wrap'],['reason-other-cb','reason-other-wrap'],['approach-other-cb','approach-other-wrap']].forEach(function(p){
+  [['trigger-other-cb','trigger-other-wrap'],['reason-other-cb','reason-other-wrap'],['approach-other-cb','approach-other-wrap'],['success-reason-other-cb','success-reason-other-wrap'],['fail-reason-other-cb','fail-reason-other-wrap']].forEach(function(p){
     var cb=document.getElementById(p[0]),wrap=document.getElementById(p[1]);
     if(cb&&wrap)cb.addEventListener('change',function(){wrap.classList.toggle('show',cb.checked);});
   });
@@ -764,6 +823,8 @@ function rebuildCheckGroups(){
   rebuildGroup('r-trigger-group',masterData.triggers,'trigger-other-cb','trigger-other-wrap');
   rebuildGroup('r-reason-group',masterData.reasons,'reason-other-cb','reason-other-wrap');
   rebuildGroup('r-approach-group',masterData.approaches,'approach-other-cb','approach-other-wrap');
+  rebuildGroup('r-success-reason-group',masterData.successReasons,'success-reason-other-cb','success-reason-other-wrap');
+  rebuildGroup('r-fail-reason-group',masterData.failReasons,'fail-reason-other-cb','fail-reason-other-wrap');
 }
 function rebuildGroup(groupId,items,otherCbId,otherWrapId){
   var group=document.getElementById(groupId);if(!group)return;
@@ -788,6 +849,7 @@ function fmtYen(v){var n=parseInt(v||0);if(!n&&n!==0)return '—';return n.toLoc
 function setUnknownName(){document.getElementById('r-name').value='不明';document.getElementById('r-kana').value='ふめい';}
 
 // ══ SUBMIT (新規顧客 + 初回来店) ══
+// ══ SUBMIT ══
 function submitForm(){
   if(!db){showToast('⚠️ Firebaseに接続されていません');return;}
   var name=document.getElementById('r-name').value.trim();
@@ -797,64 +859,10 @@ function submitForm(){
   btn.disabled=true;btn.textContent='登録中...';setSyncStatus('syncing');
 
   var triggers=getChecked('r-trigger-group'),reasons=getChecked('r-reason-group'),approaches=getChecked('r-approach-group');
+  var successReasons=getChecked('r-success-reason-group'),failReasons=getChecked('r-fail-reason-group');
   function replOther(arr,fid){var i=arr.indexOf('その他');if(i===-1)return arr;var r=arr.filter(function(x){return x!=='その他';});r.push('その他:'+document.getElementById(fid).value);return r;}
   triggers=replOther(triggers,'r-trigger-other');reasons=replOther(reasons,'r-reason-other');approaches=replOther(approaches,'r-approach-other');
-
-  var buyAmt=parseInt(document.getElementById('r-buy-amount').value)||0;
-  var sellAmt=parseInt(document.getElementById('r-sell-amount').value)||0;
-  var lineEl=document.querySelector('input[name="r-line"]:checked');
-
-  // 顧客マスター
-  var customerData={
-    name:name,kana:document.getElementById('r-kana').value.trim(),
-    gender:document.getElementById('r-gender').value,age:document.getElementById('r-age').value,
-    phone:document.getElementById('r-phone').value.trim(),line:lineEl?lineEl.value:'',
-    area:document.getElementById('r-area').value.trim(),brand:document.getElementById('r-brand').value.trim(),
-    familyHusband:document.getElementById('r-family-husband').checked,familyWife:document.getElementById('r-family-wife').checked,familyKids:document.getElementById('r-family-kids').checked,
-    createdAt:Date.now(),
-    // 集計（来店履歴から都度更新）
-    totalBuy:buyAmt,totalSell:sellAmt,visitCount:1,lastDate:date,lastStaff:document.getElementById('r-staff').value,lastResult:document.getElementById('r-result').value
-  };
-
-  // 初回来店記録
-  var visitData={
-    date:date,staff:document.getElementById('r-staff').value,result:document.getElementById('r-result').value,
-    buyAmount:buyAmt,sellAmount:sellAmt,
-    triggers:triggers,reasons:reasons,memo:document.getElementById('r-memo').value.trim(),approaches:approaches,
-    createdAt:Date.now()
-  };
-
-  var newKey=db.ref('customers').push().key;
-  var updates={};
-  updates['/customers/'+newKey]=customerData;
-  updates['/visits/'+newKey+'/'+db.ref('visits/'+newKey).push().key]=visitData;
-
-  db.ref().update(updates).then(function(){
-    // visitsキーが正しくないので再度pushで保存
-    db.ref('customers').push(customerData).then(function(ref){
-      db.ref('visits/'+ref.key).push(visitData).then(function(){
-        // 先に作ったnewKeyのデータを削除
-        showToast('✓ 登録が完了しました');resetForm();
-      });
-    });
-    // 一旦最初のupdatesで作ったゴミを消す
-    db.ref('customers/'+newKey).remove();
-  }).catch(function(e){showToast('⚠️ 登録に失敗しました: '+e.message);setSyncStatus('error');})
-  .finally(function(){btn.disabled=false;btn.textContent='登録する';});
-}
-
-// submitを修正して正しく動かす
-function submitForm(){
-  if(!db){showToast('⚠️ Firebaseに接続されていません');return;}
-  var name=document.getElementById('r-name').value.trim();
-  var date=document.getElementById('r-date').value;
-  if(!name||!date){showToast('⚠️ 必須項目（名前・来店日）を入力してください');return;}
-  var btn=document.getElementById('submit-btn');
-  btn.disabled=true;btn.textContent='登録中...';setSyncStatus('syncing');
-
-  var triggers=getChecked('r-trigger-group'),reasons=getChecked('r-reason-group'),approaches=getChecked('r-approach-group');
-  function replOther(arr,fid){var i=arr.indexOf('その他');if(i===-1)return arr;var r=arr.filter(function(x){return x!=='その他';});r.push('その他:'+document.getElementById(fid).value);return r;}
-  triggers=replOther(triggers,'r-trigger-other');reasons=replOther(reasons,'r-reason-other');approaches=replOther(approaches,'r-approach-other');
+  successReasons=replOther(successReasons,'r-success-reason-other');failReasons=replOther(failReasons,'r-fail-reason-other');
 
   var buyAmt=parseInt(document.getElementById('r-buy-amount').value)||0;
   var sellAmt=parseInt(document.getElementById('r-sell-amount').value)||0;
@@ -874,6 +882,7 @@ function submitForm(){
   var visitData={
     date:date,staff:staff,result:result,buyAmount:buyAmt,sellAmount:sellAmt,
     triggers:triggers,reasons:reasons,memo:document.getElementById('r-memo').value.trim(),approaches:approaches,
+    successReasons:successReasons,failReasons:failReasons,
     createdAt:Date.now()
   };
 
@@ -887,14 +896,16 @@ function submitForm(){
 }
 
 function resetForm(){
-  ['r-name','r-kana','r-phone','r-area','r-brand','r-trigger-other','r-reason-other','r-approach-other'].forEach(function(id){document.getElementById(id).value='';});
+  ['r-name','r-kana','r-phone','r-area','r-brand','r-trigger-other','r-reason-other','r-approach-other','r-success-reason-other','r-fail-reason-other'].forEach(function(id){document.getElementById(id).value='';});
   ['r-gender','r-age','r-staff','r-result'].forEach(function(id){document.getElementById(id).value='';});
   ['r-buy-amount','r-sell-amount'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('r-memo').value='';
   document.querySelectorAll('#view-register input[type=checkbox]').forEach(function(cb){cb.checked=false;});
   document.querySelectorAll('#view-register input[type=radio]').forEach(function(rb){rb.checked=false;});
-  ['trigger-other-wrap','reason-other-wrap','approach-other-wrap'].forEach(function(id){document.getElementById(id).classList.remove('show');});
+  ['trigger-other-wrap','reason-other-wrap','approach-other-wrap','success-reason-other-wrap','fail-reason-other-wrap'].forEach(function(id){document.getElementById(id).classList.remove('show');});
+  document.getElementById('success-reason-wrap').classList.remove('show');
+  document.getElementById('fail-reason-wrap').classList.remove('show');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1054,7 +1065,9 @@ function renderDetailVisits(k){
           '<span class="visit-card-date">'+escHtml(vd.date||'')+'</span>'+
           '<div class="visit-card-badges">'+resultBadge+(vd.staff?'<span style="font-size:11px;color:var(--ink-mute)">'+escHtml(vd.staff)+'</span>':'')+'</div>'+
         '</div>'+
-        ((vd.reasons&&vd.reasons.length)?'<div class="visit-card-body">理由: '+(vd.reasons||[]).map(function(r){return '<span class="badge badge-gold">'+escHtml(r)+'</span>';}).join(' ')+'</div>':'') +
+        ((vd.reasons&&vd.reasons.length)?'<div class="visit-card-body">手放す理由: '+(vd.reasons||[]).map(function(r){return '<span class="badge badge-gold">'+escHtml(r)+'</span>';}).join(' ')+'</div>':'') +
+        ((vd.successReasons&&vd.successReasons.length)?'<div class="visit-card-body" style="color:var(--green-soft)">✓ 成立理由: '+(vd.successReasons||[]).map(function(r){return '<span class="badge badge-success">'+escHtml(r)+'</span>';}).join(' ')+'</div>':'') +
+        ((vd.failReasons&&vd.failReasons.length)?'<div class="visit-card-body" style="color:var(--red)">✗ 失注理由: '+(vd.failReasons||[]).map(function(r){return '<span class="badge badge-fail">'+escHtml(r)+'</span>';}).join(' ')+'</div>':'') +
         (vd.memo?'<div class="visit-card-body" style="border-top:1px solid var(--cream-dark)">'+escHtml(vd.memo)+'</div>':'')+
         (((vd.buyAmount&&vd.buyAmount>0)||(vd.sellAmount&&vd.sellAmount>0))?
           '<div class="visit-card-amounts">'+
@@ -1092,8 +1105,10 @@ function showAddVisitForm(k){
       '<div class="mini-field"><label class="mini-label">スタッフ</label><select id="av-staff"><option value="">選択</option>'+staffOpts+'</select></div>'+
     '</div>'+
     '<div class="mini-field"><label class="mini-label">買取結果</label>'+
-      '<select id="av-result"><option value="">選択</option><option>成立</option><option>不成立</option></select>'+
+      '<select id="av-result" onchange="onAvResultChange()"><option value="">選択</option><option>成立</option><option>不成立</option></select>'+
     '</div>'+
+    '<div id="av-success-wrap" style="display:none"><div class="mini-field"><label class="mini-label">成立理由</label><div id="av-success-group" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div></div>'+
+    '<div id="av-fail-wrap" style="display:none"><div class="mini-field"><label class="mini-label">失注理由</label><div id="av-fail-group" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div></div>'+
     '<div class="mini-two">'+
       '<div class="mini-field"><label class="mini-label">買取金額</label><div class="mini-amount-wrap"><input type="number" id="av-buy" placeholder="0" min="0"><span class="mini-amount-unit">円</span></div></div>'+
       '<div class="mini-field"><label class="mini-label">購入金額</label><div class="mini-amount-wrap"><input type="number" id="av-sell" placeholder="0" min="0"><span class="mini-amount-unit">円</span></div></div>'+
@@ -1104,6 +1119,31 @@ function showAddVisitForm(k){
       '<button class="visit-cancel-btn" onclick="document.getElementById(\'add-visit-form-wrap\').innerHTML=\'\'">キャンセル</button>'+
     '</div>'+
   '</div>';
+  // チェックボックス動的生成
+  buildAvCheckGroup('av-success-group', masterData.successReasons, 'av-sr');
+  buildAvCheckGroup('av-fail-group', masterData.failReasons, 'av-fr');
+}
+
+function buildAvCheckGroup(containerId, items, prefix){
+  var el=document.getElementById(containerId); if(!el)return;
+  el.innerHTML='';
+  items.forEach(function(item,i){
+    var lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:5px;padding:6px 12px;background:#fff;border:1.5px solid var(--cream-deep);border-radius:20px;cursor:pointer;font-size:12px;';
+    var inp=document.createElement('input'); inp.type='checkbox'; inp.value=item; inp.id=prefix+i; inp.style.accentColor='var(--gold-light)';
+    var sp=document.createElement('span'); sp.textContent=item;
+    lbl.appendChild(inp); lbl.appendChild(sp); el.appendChild(lbl);
+  });
+}
+function onAvResultChange(){
+  var v=document.getElementById('av-result').value;
+  var sw=document.getElementById('av-success-wrap'), fw=document.getElementById('av-fail-wrap');
+  if(sw) sw.style.display = v==='成立'?'block':'none';
+  if(fw) fw.style.display = v==='不成立'?'block':'none';
+}
+function getAvChecked(containerId){
+  var el=document.getElementById(containerId); if(!el)return[];
+  return Array.from(el.querySelectorAll('input:checked')).map(function(i){return i.value;});
 }
 
 function saveVisit(k){
@@ -1114,7 +1154,10 @@ function saveVisit(k){
   var visitData={
     date:date,staff:document.getElementById('av-staff').value,result:document.getElementById('av-result').value,
     buyAmount:buyAmt,sellAmount:sellAmt,memo:document.getElementById('av-memo').value.trim(),
-    triggers:[],reasons:[],approaches:[],createdAt:Date.now()
+    triggers:[],reasons:[],approaches:[],
+    successReasons:getAvChecked('av-success-group'),
+    failReasons:getAvChecked('av-fail-group'),
+    createdAt:Date.now()
   };
   setSyncStatus('syncing');
   db.ref('visits/'+k).push(visitData).then(function(){
@@ -1139,7 +1182,7 @@ function saveVisit(k){
 // ══ SETTINGS ══
 function openSettings(){
   if(!db){showToast('⚠️ Firebaseに接続してから設定を開いてください');return;}
-  settingsDraft={staff:staffList.slice(),triggers:masterData.triggers.slice(),reasons:masterData.reasons.slice(),approaches:masterData.approaches.slice()};
+  settingsDraft={staff:staffList.slice(),triggers:masterData.triggers.slice(),reasons:masterData.reasons.slice(),approaches:masterData.approaches.slice(),successReasons:masterData.successReasons.slice(),failReasons:masterData.failReasons.slice()};
   renderSettingsPanel('staff');
   document.querySelectorAll('.settings-tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.settings-panel').forEach(function(p){p.classList.remove('active');});
@@ -1209,7 +1252,7 @@ function saveSettings(){
   if(!db){showToast('⚠️ Firebase未接続');return;}
   var btn=document.querySelector('.settings-save-btn');btn.disabled=true;btn.textContent='保存中...';setSyncStatus('syncing');
   var staffObj={};settingsDraft.staff.forEach(function(s,i){staffObj['s'+i]=s;});
-  db.ref().update({'/staff':staffObj,'/masterData/triggers':settingsDraft.triggers,'/masterData/reasons':settingsDraft.reasons,'/masterData/approaches':settingsDraft.approaches})
+  db.ref().update({'/staff':staffObj,'/masterData/triggers':settingsDraft.triggers,'/masterData/reasons':settingsDraft.reasons,'/masterData/approaches':settingsDraft.approaches,'/masterData/successReasons':settingsDraft.successReasons,'/masterData/failReasons':settingsDraft.failReasons})
   .then(function(){showToast('✓ 設定を保存しました');closeModal('settings-modal');})
   .catch(function(e){showToast('⚠️ 保存に失敗しました: '+e.message);setSyncStatus('error');})
   .finally(function(){btn.disabled=false;btn.textContent='変更を保存する';});
