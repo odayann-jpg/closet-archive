@@ -606,19 +606,26 @@ function showLoginScreen() {
 function doLogin() {
   var input = document.getElementById('login-password').value;
   var errEl = document.getElementById('login-error');
+  errEl.classList.remove('show');
   if (!input) { errEl.classList.add('show'); return; }
 
-  // Firebaseからパスワードを取得して照合
+  var cfg = getSavedConfig();
+
+  // Firebaseが未接続の場合は先に接続してからパスワード照合
+  if (!db && cfg) {
+    try {
+      firebase.initializeApp(cfg);
+      db = firebase.database();
+    } catch(e) { /* already initialized */ }
+  }
+
   if (!db) {
-    // Firebase未接続時は初期パスワードで照合
-    if (input === DEFAULT_PASSWORD) {
-      onLoginSuccess();
-    } else {
-      errEl.classList.add('show');
-      document.getElementById('login-password').value = '';
-    }
+    // Firebase接続できない場合は初期パスワードのみ許可
+    if (input === DEFAULT_PASSWORD) { onLoginSuccess(); }
+    else { errEl.classList.add('show'); document.getElementById('login-password').value = ''; }
     return;
   }
+
   db.ref('settings/password').once('value', function(snap) {
     var storedPw = snap.val() || DEFAULT_PASSWORD;
     if (input === storedPw) {
@@ -637,6 +644,13 @@ function onLoginSuccess() {
   document.getElementById('login-screen').classList.remove('show');
   document.getElementById('login-error').classList.remove('show');
   document.getElementById('login-password').value = '';
+  // ログイン後にデータ監視を開始
+  if (db) {
+    startFirebaseListeners();
+  } else if (window._pendingFirebaseConfig) {
+    initFirebase(window._pendingFirebaseConfig);
+    window._pendingFirebaseConfig = null;
+  }
 }
 
 function logout() {
@@ -661,39 +675,41 @@ function resetConfig(){if(confirm('Firebase設定をリセットしますか？'
 
 // ══ FIREBASE ══
 function initFirebase(config){
-  document.getElementById('loading-overlay').classList.add('show');
   try{
-    firebase.initializeApp(config);
+    if(!firebase.apps.length){ firebase.initializeApp(config); }
     db=firebase.database();
-    db.ref('staff').on('value',function(snap){
-      var d=snap.val();
-      if(d){staffList=Object.values(d);}
-      else{staffList=['田中','佐藤','鈴木','山田','伊藤'];var s={};staffList.forEach(function(n,i){s['s'+i]=n;});db.ref('staff').set(s);}
-      populateStaffSelects();
-    });
-    db.ref('masterData').on('value',function(snap){
-      var d=snap.val();
-      if(d){if(d.triggers)masterData.triggers=d.triggers;if(d.reasons)masterData.reasons=d.reasons;if(d.approaches)masterData.approaches=d.approaches;}
-      else{db.ref('masterData').set({triggers:masterData.triggers,reasons:masterData.reasons,approaches:masterData.approaches});}
-      rebuildCheckGroups();
-    });
-    db.ref('customers').on('value',function(snap){
-      document.getElementById('loading-overlay').classList.remove('show');
-      setSyncStatus('connected');
-      customers=snap.val()||{};
-      renderList();
-      // 詳細モーダルが開いていれば更新
-      if(currentDetailKey&&customers[currentDetailKey]){
-        renderDetailVisits(currentDetailKey);
-      }
-    },function(err){
-      document.getElementById('loading-overlay').classList.remove('show');
-      setSyncStatus('error');showToast('⚠️ 接続エラー: '+err.message);
-    });
   }catch(e){
-    document.getElementById('loading-overlay').classList.remove('show');
-    setSyncStatus('error');showToast('⚠️ 初期化エラー: '+e.message);
+    setSyncStatus('error');showToast('⚠️ 初期化エラー: '+e.message);return;
   }
+  startFirebaseListeners();
+}
+
+function startFirebaseListeners(){
+  document.getElementById('loading-overlay').classList.add('show');
+  db.ref('staff').on('value',function(snap){
+    var d=snap.val();
+    if(d){staffList=Object.values(d);}
+    else{staffList=['田中','佐藤','鈴木','山田','伊藤'];var s={};staffList.forEach(function(n,i){s['s'+i]=n;});db.ref('staff').set(s);}
+    populateStaffSelects();
+  });
+  db.ref('masterData').on('value',function(snap){
+    var d=snap.val();
+    if(d){if(d.triggers)masterData.triggers=d.triggers;if(d.reasons)masterData.reasons=d.reasons;if(d.approaches)masterData.approaches=d.approaches;}
+    else{db.ref('masterData').set({triggers:masterData.triggers,reasons:masterData.reasons,approaches:masterData.approaches});}
+    rebuildCheckGroups();
+  });
+  db.ref('customers').on('value',function(snap){
+    document.getElementById('loading-overlay').classList.remove('show');
+    setSyncStatus('connected');
+    customers=snap.val()||{};
+    renderList();
+    if(currentDetailKey&&customers[currentDetailKey]){
+      renderDetailVisits(currentDetailKey);
+    }
+  },function(err){
+    document.getElementById('loading-overlay').classList.remove('show');
+    setSyncStatus('error');showToast('⚠️ 接続エラー: '+err.message);
+  });
 }
 function setSyncStatus(s){
   document.getElementById('sync-dot').className='sync-dot '+s;
@@ -713,9 +729,15 @@ document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
   });
   var cfg=getSavedConfig();
   if(cfg){
-    initFirebase(cfg);
-    // Firebase接続後にログイン画面を表示
-    if(!checkLogin()){ showLoginScreen(); }
+    if(checkLogin()){
+      // ログイン済み → そのままFirebase接続
+      initFirebase(cfg);
+    } else {
+      // 未ログイン → ログイン画面を先に表示、ログイン後にFirebase接続
+      showLoginScreen();
+      // ログイン成功時にFirebaseを初期化するよう上書き
+      window._pendingFirebaseConfig = cfg;
+    }
   } else {
     document.getElementById('setup-screen').classList.add('show');
   }
