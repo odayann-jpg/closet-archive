@@ -661,6 +661,7 @@ function logout() {
   document.getElementById('login-password').value = '';
   setTimeout(function(){ document.getElementById('login-password').focus(); }, 100);
 }
+function getSavedConfig(){try{return JSON.parse(localStorage.getItem('fb_config')||'null');}catch(e){return null;}}
 function saveConfig(){
   var ak=document.getElementById('cfg-apiKey').value.trim(),ad=document.getElementById('cfg-authDomain').value.trim(),du=document.getElementById('cfg-databaseURL').value.trim(),pi=document.getElementById('cfg-projectId').value.trim();
   var er=document.getElementById('setup-error');
@@ -715,6 +716,7 @@ function setSyncStatus(s){
   document.getElementById('sync-dot').className='sync-dot '+s;
   document.getElementById('sync-text').textContent=s==='connected'?'リアルタイム同期中':s==='syncing'?'同期中...':'接続エラー';
 }
+
 
 // ══ BOOT ══
 document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
