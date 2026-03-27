@@ -396,6 +396,7 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
       <div class="field"><label class="field-label">家族の服の有無</label>
         <div class="check-group">
           <label><input type="checkbox" id="r-family-husband"><span>旦那様の服ありそう</span></label>
+          <label><input type="checkbox" id="r-family-wife"><span>奥様の服ありそう</span></label>
           <label><input type="checkbox" id="r-family-kids"><span>子供服ありそう</span></label>
         </div>
       </div>
@@ -405,8 +406,9 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
       <div class="section-title">6. LINE登録</div>
       <div class="field"><label class="field-label">LINE登録状況</label>
         <div class="radio-group">
-          <label><input type="radio" name="r-line" value="◯"><span>◯ 登録済み</span></label>
-          <label><input type="radio" name="r-line" value="✕"><span>✕ 未登録</span></label>
+          <label><input type="radio" name="r-line" value="新規登録"><span>新規登録</span></label>
+          <label><input type="radio" name="r-line" value="登録済み"><span>登録済み</span></label>
+          <label><input type="radio" name="r-line" value="未登録"><span>未登録</span></label>
         </div>
       </div>
     </div>
@@ -670,7 +672,7 @@ function submitForm(){
     gender:document.getElementById('r-gender').value,age:document.getElementById('r-age').value,
     phone:document.getElementById('r-phone').value.trim(),line:lineEl?lineEl.value:'',
     area:document.getElementById('r-area').value.trim(),brand:document.getElementById('r-brand').value.trim(),
-    familyHusband:document.getElementById('r-family-husband').checked,familyKids:document.getElementById('r-family-kids').checked,
+    familyHusband:document.getElementById('r-family-husband').checked,familyWife:document.getElementById('r-family-wife').checked,familyKids:document.getElementById('r-family-kids').checked,
     createdAt:Date.now(),
     // 集計（来店履歴から都度更新）
     totalBuy:buyAmt,totalSell:sellAmt,visitCount:1,lastDate:date,lastStaff:document.getElementById('r-staff').value,lastResult:document.getElementById('r-result').value
@@ -727,7 +729,7 @@ function submitForm(){
     gender:document.getElementById('r-gender').value,age:document.getElementById('r-age').value,
     phone:document.getElementById('r-phone').value.trim(),line:lineEl?lineEl.value:'',
     area:document.getElementById('r-area').value.trim(),brand:document.getElementById('r-brand').value.trim(),
-    familyHusband:document.getElementById('r-family-husband').checked,familyKids:document.getElementById('r-family-kids').checked,
+    familyHusband:document.getElementById('r-family-husband').checked,familyWife:document.getElementById('r-family-wife').checked,familyKids:document.getElementById('r-family-kids').checked,
     createdAt:Date.now(),
     totalBuy:buyAmt,totalSell:sellAmt,visitCount:1,lastDate:date,lastStaff:staff,lastResult:result
   };
@@ -885,7 +887,7 @@ function showDetail(k){
 
 function renderDetailInfo(k){
   var c=customers[k];if(!c)return;
-  var fam=[];if(c.familyHusband)fam.push('旦那様の服ありそう');if(c.familyKids)fam.push('子供服ありそう');
+  var fam=[];if(c.familyHusband)fam.push('旦那様の服ありそう');if(c.familyWife)fam.push('奥様の服ありそう');if(c.familyKids)fam.push('子供服ありそう');
   var rows=[
     ['最終来店日',c.lastDate],['ふりがな',c.kana],['性別',c.gender],['年代',c.age],['電話番号',c.phone],
     ['LINE登録',c.line],['よく買うエリア',c.area],['よく買うブランド',c.brand],['家族の服',fam.join('、')]
