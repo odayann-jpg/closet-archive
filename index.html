@@ -149,36 +149,6 @@
   .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--cream); padding: 12px 28px; border-radius: 24px; font-size: 14px; opacity: 0; transition: opacity 0.25s, transform 0.25s; z-index: 1000; box-shadow: var(--shadow-lg); pointer-events: none; white-space: nowrap; border-left: 4px solid var(--gold); }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* ── SETTINGS MODAL ── */
-  .settings-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,23,20,0.55); z-index: 300; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; }
-  .settings-modal-overlay.open { display: flex; }
-  .settings-modal { background: var(--white); border-radius: 14px; max-width: 560px; width: 100%; box-shadow: var(--shadow-lg); margin: auto; }
-  .settings-modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--cream-dark); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--white); border-radius: 14px 14px 0 0; z-index: 1; }
-  .settings-modal-header h3 { font-family: 'Playfair Display', serif; font-size: 20px; }
-  .settings-modal-body { padding: 20px 24px 28px; }
-  .settings-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--cream-dark); border-radius: 8px; padding: 4px; }
-  .settings-tab { flex: 1; padding: 8px 6px; background: none; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; color: var(--ink-mute); font-weight: 500; transition: all 0.15s; text-align: center; }
-  .settings-tab:hover { color: var(--ink); }
-  .settings-tab.active { background: var(--white); color: var(--ink); box-shadow: var(--shadow); font-weight: 700; }
-  .settings-panel { display: none; }
-  .settings-panel.active { display: block; }
-  .settings-section-label { font-size: 11px; font-weight: 700; color: var(--ink-mute); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
-  .item-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-  .item-row { display: flex; align-items: center; gap: 8px; background: var(--cream); border-radius: var(--radius-sm); padding: 8px 10px; border: 1px solid var(--cream-deep); }
-  .item-row input[type="text"] { flex: 1; border: none; background: none; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; color: var(--ink); outline: none; min-width: 0; }
-  .item-row input[type="text"]:focus { color: var(--ink); }
-  .item-row .drag-handle { color: var(--ink-mute); cursor: grab; font-size: 14px; flex-shrink: 0; user-select: none; }
-  .item-row .remove-btn { background: none; border: none; color: var(--ink-mute); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
-  .item-row .remove-btn:hover { color: var(--red); background: #fde8e8; }
-  .add-item-row { display: flex; gap: 8px; }
-  .add-item-input { flex: 1; padding: 9px 12px; border: 1.5px dashed var(--cream-deep); border-radius: var(--radius-sm); font-size: 14px; font-family: 'Noto Sans JP', sans-serif; background: var(--cream); color: var(--ink); outline: none; transition: border-color 0.15s; }
-  .add-item-input:focus { border-color: var(--gold); border-style: solid; }
-  .add-item-btn { padding: 9px 16px; background: var(--gold); color: var(--ink); border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; transition: background 0.15s; white-space: nowrap; }
-  .add-item-btn:hover { background: var(--gold-light); }
-  .settings-save-btn { width: 100%; padding: 13px; background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius); font-size: 14px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; letter-spacing: 0.06em; transition: background 0.18s; margin-top: 20px; }
-  .settings-save-btn:hover { background: var(--ink-soft); }
-  .settings-note { font-size: 12px; color: var(--ink-mute); line-height: 1.6; margin-top: 8px; padding: 10px 12px; background: var(--cream); border-radius: var(--radius-sm); }
-
   @media (max-width: 768px) { .search-grid { grid-template-columns: 1fr 1fr; } .list-wrap { padding: 12px 12px 60px; } .header { padding: 0 12px; } .header-brand { font-size: 15px; } }
   @media (max-width: 540px) { .search-grid { grid-template-columns: 1fr; } .two-col { grid-template-columns: 1fr; } }
 </style>
@@ -224,7 +194,7 @@
   <nav class="header-nav">
     <button class="nav-btn active" id="nav-register" onclick="switchView('register')">＋ 新規登録</button>
     <button class="nav-btn" id="nav-list" onclick="switchView('list')">顧客一覧</button>
-    <button class="settings-btn" onclick="openSettings()">⚙ 設定</button>
+    <button class="settings-btn" onclick="resetConfig()">⚙ 設定</button>
   </nav>
 </header>
 
@@ -360,182 +330,10 @@
   </div>
 </div>
 
-<!-- SETTINGS MODAL -->
-<div class="settings-modal-overlay" id="settings-modal" onclick="closeSettingsOutside(event)">
-  <div class="settings-modal">
-    <div class="settings-modal-header">
-      <h3>設定</h3>
-      <button class="modal-close" onclick="closeSettings()">✕</button>
-    </div>
-    <div class="settings-modal-body">
-      <div class="settings-tabs">
-        <button class="settings-tab active" onclick="switchSettingsTab('staff',this)">スタッフ</button>
-        <button class="settings-tab" onclick="switchSettingsTab('triggers',this)">来店きっかけ</button>
-        <button class="settings-tab" onclick="switchSettingsTab('reasons',this)">手放す理由</button>
-        <button class="settings-tab" onclick="switchSettingsTab('approaches',this)">次回アプローチ</button>
-      </div>
-
-      <!-- スタッフ -->
-      <div class="settings-panel active" id="panel-staff">
-        <div class="settings-section-label">スタッフ一覧</div>
-        <div class="item-list" id="list-staff"></div>
-        <div class="add-item-row">
-          <input class="add-item-input" id="new-staff-input" placeholder="新しいスタッフ名を入力" onkeydown="if(event.key==='Enter')addSettingsItem('staff')">
-          <button class="add-item-btn" onclick="addSettingsItem('staff')">＋ 追加</button>
-        </div>
-        <div class="settings-note">※ 登録フォームのスタッフ選択プルダウンに反映されます。削除しても過去の登録データは変わりません。</div>
-      </div>
-
-      <!-- 来店きっかけ -->
-      <div class="settings-panel" id="panel-triggers">
-        <div class="settings-section-label">来店きっかけの選択肢</div>
-        <div class="item-list" id="list-triggers"></div>
-        <div class="add-item-row">
-          <input class="add-item-input" id="new-triggers-input" placeholder="新しい選択肢を入力" onkeydown="if(event.key==='Enter')addSettingsItem('triggers')">
-          <button class="add-item-btn" onclick="addSettingsItem('triggers')">＋ 追加</button>
-        </div>
-        <div class="settings-note">※「その他」は常に表示されます。ここでは追加項目のみ管理してください。</div>
-      </div>
-
-      <!-- 手放す理由 -->
-      <div class="settings-panel" id="panel-reasons">
-        <div class="settings-section-label">手放す理由の選択肢</div>
-        <div class="item-list" id="list-reasons"></div>
-        <div class="add-item-row">
-          <input class="add-item-input" id="new-reasons-input" placeholder="新しい選択肢を入力" onkeydown="if(event.key==='Enter')addSettingsItem('reasons')">
-          <button class="add-item-btn" onclick="addSettingsItem('reasons')">＋ 追加</button>
-        </div>
-        <div class="settings-note">※「その他」は常に表示されます。ここでは追加項目のみ管理してください。</div>
-      </div>
-
-      <!-- 次回アプローチ -->
-      <div class="settings-panel" id="panel-approaches">
-        <div class="settings-section-label">次回アプローチの選択肢</div>
-        <div class="item-list" id="list-approaches"></div>
-        <div class="add-item-row">
-          <input class="add-item-input" id="new-approaches-input" placeholder="新しい選択肢を入力" onkeydown="if(event.key==='Enter')addSettingsItem('approaches')">
-          <button class="add-item-btn" onclick="addSettingsItem('approaches')">＋ 追加</button>
-        </div>
-        <div class="settings-note">※「その他」は常に表示されます。ここでは追加項目のみ管理してください。</div>
-      </div>
-
-      <button class="settings-save-btn" onclick="saveSettings()">変更を保存する</button>
-      <div style="text-align:center;margin-top:14px">
-        <button onclick="resetConfig()" style="background:none;border:none;color:var(--ink-mute);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'Noto Sans JP',sans-serif;">Firebase接続設定をリセット</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
 var db = null, customers = {}, staffList = [], sortKey = 'date', sortAsc = false, editingCell = null, toastTimer = null;
-
-// マスターデータ（Firebase管理）
-var masterData = {
-  staff: [],
-  triggers: ['チラシ','SNS','知人の紹介','通りすがり','Googleマップ'],
-  reasons: ['サイズの変化','テイストの変化','断捨離・整理','他店での不満'],
-  approaches: ['家族の服も査定できる旨を伝えた','チラシを渡した']
-};
-var settingsCurrentTab = 'staff';
-// 編集中の一時データ
-var settingsDraft = {};
-
-// ── 設定モーダル ──
-function openSettings() {
-  if(!db){showToast('⚠️ Firebaseに接続してから設定を開いてください');return;}
-  // Firebase から最新マスターを読んでドラフトにコピー
-  settingsDraft = {
-    staff: staffList.slice(),
-    triggers: masterData.triggers.slice(),
-    reasons: masterData.reasons.slice(),
-    approaches: masterData.approaches.slice()
-  };
-  renderSettingsPanel('staff');
-  switchSettingsTab('staff', document.querySelector('.settings-tab'));
-  document.getElementById('settings-modal').classList.add('open');
-}
-
-function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
-function closeSettingsOutside(e) { if(e.target===document.getElementById('settings-modal')) closeSettings(); }
-
-function switchSettingsTab(tab, btn) {
-  settingsCurrentTab = tab;
-  document.querySelectorAll('.settings-panel').forEach(function(p){p.classList.remove('active');});
-  document.getElementById('panel-'+tab).classList.add('active');
-  document.querySelectorAll('.settings-tab').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
-  renderSettingsPanel(tab);
-}
-
-function renderSettingsPanel(tab) {
-  var list = document.getElementById('list-'+tab);
-  if(!list) return;
-  var items = settingsDraft[tab] || [];
-  list.innerHTML = '';
-  items.forEach(function(item, idx) {
-    var row = document.createElement('div');
-    row.className = 'item-row';
-    row.innerHTML =
-      '<span class="drag-handle">☰</span>'+
-      '<input type="text" value="'+escHtml(item)+'" data-tab="'+tab+'" data-idx="'+idx+'">'+
-      '<button class="remove-btn" data-tab="'+tab+'" data-idx="'+idx+'" title="削除">✕</button>';
-    // 名前変更
-    row.querySelector('input').addEventListener('input', function() {
-      settingsDraft[this.dataset.tab][parseInt(this.dataset.idx)] = this.value;
-    });
-    // 削除
-    row.querySelector('.remove-btn').addEventListener('click', function() {
-      var t=this.dataset.tab, i=parseInt(this.dataset.idx);
-      if(settingsDraft[t].length<=1){showToast('⚠️ 最低1件は必要です');return;}
-      settingsDraft[t].splice(i,1);
-      renderSettingsPanel(t);
-    });
-    list.appendChild(row);
-  });
-}
-
-function addSettingsItem(tab) {
-  var input = document.getElementById('new-'+tab+'-input');
-  var val = input.value.trim();
-  if(!val){input.focus();return;}
-  if(settingsDraft[tab].indexOf(val)!==-1){showToast('⚠️ 同じ名前がすでにあります');return;}
-  settingsDraft[tab].push(val);
-  input.value='';
-  renderSettingsPanel(tab);
-  showToast('追加しました（保存ボタンで確定）');
-}
-
-function saveSettings() {
-  if(!db){showToast('⚠️ Firebase未接続');return;}
-  var btn = document.querySelector('.settings-save-btn');
-  btn.disabled=true; btn.textContent='保存中...';
-  setSyncStatus('syncing');
-
-  // staff → /staff に保存
-  var staffObj={};
-  settingsDraft.staff.forEach(function(s,i){staffObj['s'+i]=s;});
-
-  // その他の選択肢 → /masterData に保存
-  var updates = {
-    '/staff': staffObj,
-    '/masterData/triggers': settingsDraft.triggers,
-    '/masterData/reasons': settingsDraft.reasons,
-    '/masterData/approaches': settingsDraft.approaches
-  };
-
-  db.ref().update(updates).then(function(){
-    showToast('✓ 設定を保存しました');
-    closeSettings();
-  }).catch(function(e){
-    showToast('⚠️ 保存に失敗しました: '+e.message);
-    setSyncStatus('error');
-  }).finally(function(){
-    btn.disabled=false; btn.textContent='変更を保存する';
-  });
-}
 
 function getSavedConfig() { try { return JSON.parse(localStorage.getItem('fb_config')||'null'); } catch(e) { return null; } }
 
@@ -567,22 +365,6 @@ function initFirebase(config) {
       if (data) { staffList = Object.values(data); }
       else { staffList = ['田中','佐藤','鈴木','山田','伊藤']; var s={}; staffList.forEach(function(n,i){s['s'+i]=n;}); db.ref('staff').set(s); }
       populateStaffSelects();
-    });
-    db.ref('masterData').on('value', function(snap) {
-      var data = snap.val();
-      if(data) {
-        if(data.triggers) masterData.triggers = data.triggers;
-        if(data.reasons) masterData.reasons = data.reasons;
-        if(data.approaches) masterData.approaches = data.approaches;
-      } else {
-        // 初回: デフォルト値を保存
-        db.ref('masterData').set({
-          triggers: masterData.triggers,
-          reasons: masterData.reasons,
-          approaches: masterData.approaches
-        });
-      }
-      rebuildCheckGroups();
     });
     db.ref('customers').on('value', function(snap) {
       document.getElementById('loading-overlay').classList.remove('show');
@@ -638,43 +420,6 @@ function populateStaffSelects() {
       else this.value='';
     }
   });}
-}
-
-function rebuildCheckGroups() {
-  rebuildGroup('r-trigger-group', masterData.triggers, 'trigger-other-cb', 'trigger-other-wrap');
-  rebuildGroup('r-reason-group', masterData.reasons, 'reason-other-cb', 'reason-other-wrap');
-  rebuildGroup('r-approach-group', masterData.approaches, 'approach-other-cb', 'approach-other-wrap');
-}
-
-function rebuildGroup(groupId, items, otherCbId, otherWrapId) {
-  var group = document.getElementById(groupId);
-  if(!group) return;
-  // 現在チェック済みの値を保持
-  var checked = Array.from(group.querySelectorAll('input:checked')).map(function(el){return el.value;});
-  group.innerHTML = '';
-  items.forEach(function(item) {
-    var lbl = document.createElement('label');
-    var inp = document.createElement('input');
-    inp.type='checkbox'; inp.value=item;
-    if(checked.indexOf(item)!==-1) inp.checked=true;
-    var sp=document.createElement('span'); sp.textContent=item;
-    lbl.appendChild(inp); lbl.appendChild(sp);
-    group.appendChild(lbl);
-  });
-  // 「その他」を末尾に追加
-  var othLbl=document.createElement('label');
-  var othInp=document.createElement('input');
-  othInp.type='checkbox'; othInp.value='その他'; othInp.id=otherCbId;
-  if(checked.indexOf('その他')!==-1) othInp.checked=true;
-  var othSp=document.createElement('span'); othSp.textContent='その他';
-  othLbl.appendChild(othInp); othLbl.appendChild(othSp);
-  group.appendChild(othLbl);
-  // 条件表示の再バインド
-  var wrap=document.getElementById(otherWrapId);
-  if(wrap){
-    wrap.classList.toggle('show', othInp.checked);
-    othInp.addEventListener('change',function(){wrap.classList.toggle('show',othInp.checked);});
-  }
 }
 
 function getChecked(gid) {
