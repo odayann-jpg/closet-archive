@@ -323,6 +323,27 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
 .bar-fill.mute{background:var(--ink-mute);}
 .bar-count{font-size:11px;color:var(--ink-mute);width:28px;flex-shrink:0;text-align:right;}
 .no-data{text-align:center;padding:30px 0;color:var(--ink-mute);font-size:13px;}
+/* CHECKLIST */
+.checklist-card{background:var(--white);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border:1px solid var(--cream-deep);margin-top:16px;}
+.checklist-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.checklist-subtitle{font-size:12px;color:var(--ink-mute);margin-bottom:16px;}
+.checklist-section{margin-bottom:18px;}
+.checklist-section-label{font-size:11px;font-weight:700;color:var(--gold-light);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--cream-dark);}
+.checklist-item{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);margin-bottom:4px;transition:background .12s;cursor:pointer;}
+.checklist-item:hover{background:var(--accent-pale);}
+.checklist-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--gold-light);cursor:pointer;flex-shrink:0;margin-top:1px;}
+.checklist-item-body{flex:1;min-width:0;}
+.checklist-item-label{font-size:13px;color:var(--ink);line-height:1.5;}
+.checklist-item-label.checked{color:var(--ink-mute);text-decoration:line-through;}
+.checklist-item-hint{font-size:11px;color:var(--ink-mute);margin-top:2px;line-height:1.5;}
+.checklist-item-alert{font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;margin-top:4px;display:inline-block;}
+.checklist-item-alert.warn{background:#fff3cd;color:#856404;}
+.checklist-item-alert.danger{background:#fde8e8;color:var(--red);}
+.checklist-item-alert.good{background:#d4f0dc;color:var(--green-soft);}
+.checklist-progress{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-dark);}
+.checklist-progress-bar{flex:1;background:var(--cream-dark);border-radius:4px;height:8px;overflow:hidden;}
+.checklist-progress-fill{height:100%;background:var(--gold-light);border-radius:4px;transition:width .4s ease;}
+.checklist-progress-label{font-size:12px;color:var(--ink-mute);white-space:nowrap;}
 @media(max-width:600px){.analytics-grid{grid-template-columns:1fr;}.kpi-grid{grid-template-columns:repeat(2,1fr);}.analytics-card.full{grid-column:1;}}
 </style>
 </head>
@@ -1532,7 +1553,12 @@ function renderAnalytics(){
   } else { html += '<div class="no-data">データなし</div>'; }
   html += '</div></div>';
 
+  // ── 月次振り返りチェックリスト ──
+  html += renderChecklist(total, success, fail, successRate, repeatRate, totalBuy, triggerCount, failReasonCount, analyticsMonth);
+
   document.getElementById('analytics-content').innerHTML = html;
+  // チェックボックスの状態を復元
+  restoreChecklist(analyticsMonth);
 }
 
 function showDailyModal(month){
@@ -1626,7 +1652,202 @@ function kpiCard(label, value, sub, color){
   return '<div class="kpi-card"><div class="kpi-label">'+label+'</div><div class="kpi-value'+(color?' '+color:'')+'">'+value+'</div>'+(sub?'<div class="kpi-sub">'+sub+'</div>':'')+'</div>';
 }
 function barRow(label, count, pct, color){
-  return '<div class="bar-row"><div class="bar-row-label">'+escHtml(label)+'</div><div class="bar-track"><div class="bar-fill '+color+'" style="width:'+pct+'%">'+( pct>15?count+'件':'')+'</div></div><div class="bar-count">'+( pct<=15?count:'' )+'</div></div>';
+  return '<div class="bar-row"><div class="bar-row-label">'+escHtml(label)+'</div><div class="bar-track"><div class="bar-fill '+color+'" style="width:'+pct+'%">'+(pct>15?count+'件':'')+'</div></div><div class="bar-count">'+(pct<=15?count:'')+'</div></div>';
+}
+
+// ── チェックリスト ──
+function renderChecklist(total, success, fail, successRate, repeatRate, totalBuy, triggerCount, failReasonCount, month){
+  var prevMonth = getPrevMonth(month);
+  var prevCustomers = Object.values(customers).filter(function(c){ return (c.lastDate||'').slice(0,7)===prevMonth; });
+  var prevTotal = prevCustomers.length;
+  var prevSuccess = prevCustomers.filter(function(c){return c.lastResult==='成立';}).length;
+  var prevSuccessRate = prevTotal ? Math.round(prevSuccess/prevTotal*100) : 0;
+  var prevRepeat = prevCustomers.filter(function(c){return parseInt(c.visitCount||1)>1;}).length;
+  var prevRepeatRate = prevTotal ? Math.round(prevRepeat/prevTotal*100) : 0;
+
+  // トップ失注理由
+  var topFail = Object.entries(failReasonCount).sort(function(a,b){return b[1]-a[1];})[0];
+  var topTrigger = Object.entries(triggerCount).sort(function(a,b){return b[1]-a[1];})[0];
+
+  var items = [];
+
+  // 1. 来店数チェック
+  var visitChange = prevTotal ? total - prevTotal : null;
+  var visitAlert = '';
+  if(visitChange!==null){
+    if(visitChange < 0) visitAlert = '<span class="checklist-item-alert danger">前月比 '+visitChange+'件 ▼ 集客施策を見直しましょう</span>';
+    else if(visitChange > 0) visitAlert = '<span class="checklist-item-alert good">前月比 +'+visitChange+'件 ▲ 好調です</span>';
+    else visitAlert = '<span class="checklist-item-alert warn">前月と同数 → 現状維持</span>';
+  }
+  items.push({
+    id:'v1', section:'📊 数字の全体像',
+    label:'来店数を前月と比較した（今月 '+total+'件 / 前月 '+(prevTotal||'—')+'件）',
+    hint:'増減の理由を考えましょう。施策・季節・天候など。',
+    alert: visitAlert
+  });
+
+  // 2. 成約率チェック
+  var rateAlert = '';
+  if(prevSuccessRate && successRate < prevSuccessRate - 10) rateAlert = '<span class="checklist-item-alert danger">成約率が前月より'+( prevSuccessRate-successRate)+'%低下 → 価格設定・接客を確認</span>';
+  else if(successRate >= 50) rateAlert = '<span class="checklist-item-alert good">成約率'+successRate+'% → 優秀です</span>';
+  else if(total > 0) rateAlert = '<span class="checklist-item-alert warn">成約率'+successRate+'% → 改善の余地あり</span>';
+  items.push({
+    id:'v2', section:'📊 数字の全体像',
+    label:'成約率を確認した（今月 '+successRate+'% / 前月 '+prevSuccessRate+'%）',
+    hint:'30%以下が続く場合は価格・接客・商品ラインを見直す。',
+    alert: rateAlert
+  });
+
+  // 3. リピート率
+  var repeatAlert = '';
+  if(repeatRate >= 30) repeatAlert = '<span class="checklist-item-alert good">リピート率'+repeatRate+'% → 顧客満足度が高い</span>';
+  else if(repeatRate > 0) repeatAlert = '<span class="checklist-item-alert warn">リピート率'+repeatRate+'% → LINE活用や再来店促進を検討</span>';
+  items.push({
+    id:'v3', section:'📊 数字の全体像',
+    label:'リピート率を確認した（'+repeatRate+'% / 前月 '+prevRepeatRate+'%）',
+    hint:'リピーターは新規より成約率が高い傾向。育成が売上安定につながる。',
+    alert: repeatAlert
+  });
+
+  // 4. きっかけ分析
+  var triggerAlert = topTrigger ? '<span class="checklist-item-alert warn">最多: '+topTrigger[0]+'（'+topTrigger[1]+'件） → この施策を継続・強化</span>' : '';
+  items.push({
+    id:'c1', section:'📣 集客施策の効果確認',
+    label:'来店きっかけの内訳を確認した',
+    hint:'施策（チラシ・SNS等）ごとに効果を測定。費用対効果を評価しましょう。',
+    alert: triggerAlert
+  });
+
+  items.push({
+    id:'c2', section:'📣 集客施策の効果確認',
+    label:'今月打った施策と来店数の関係を考えた',
+    hint:'チラシ配布日・SNS投稿日の前後で来店が増えたか日別詳細で確認。'
+  });
+
+  // 5. 失注分析
+  var failAlert = '';
+  if(topFail){
+    if(topFail[0].indexOf('価格')!==-1) failAlert = '<span class="checklist-item-alert danger">「'+topFail[0]+'」が最多 → 査定基準・相場確認が必要</span>';
+    else if(topFail[0].indexOf('持ち帰')!==-1) failAlert = '<span class="checklist-item-alert warn">「'+topFail[0]+'」が最多 → 当日成立を促すトーク・特典を検討</span>';
+    else if(topFail[0].indexOf('他店')!==-1) failAlert = '<span class="checklist-item-alert warn">「'+topFail[0]+'」が最多 → 競合調査・差別化ポイントの見直し</span>';
+  }
+  items.push({
+    id:'f1', section:'🔍 失注・改善分析',
+    label:'失注理由のトップを確認した',
+    hint:'失注理由ごとに対策が変わります。毎月パターンを記録しましょう。',
+    alert: failAlert
+  });
+
+  items.push({
+    id:'f2', section:'🔍 失注・改善分析',
+    label:'「持ち帰り」で帰った顧客が再来店したか確認した',
+    hint:'再来店した場合は成立につながったか追跡すると歩留まりが分かります。'
+  });
+
+  // 6. 顧客属性
+  items.push({
+    id:'a1', section:'👥 顧客属性の把握',
+    label:'今月の年代・性別の構成を前月と比較した',
+    hint:'構成が変化しているなら、集客施策の対象が変わっているサインかもしれません。'
+  });
+
+  items.push({
+    id:'a2', section:'👥 顧客属性の把握',
+    label:'時間帯別の来店パターンを確認し、スタッフ配置に反映した',
+    hint:'ピーク時間帯に経験豊富なスタッフを配置すると成約率が上がる傾向があります。'
+  });
+
+  // 7. 来月の施策
+  items.push({
+    id:'n1', section:'🎯 来月への施策立案',
+    label:'来月の集客施策（チラシ・SNS・イベント等）を決めた',
+    hint:'今月のデータをもとに、効果が高かった施策を継続・強化しましょう。'
+  });
+
+  items.push({
+    id:'n2', section:'🎯 来月への施策立案',
+    label:'失注顧客へのフォロー施策（LINE配信等）を計画した',
+    hint:'「持ち帰り」「検討中」顧客へのLINE再アプローチは成約率向上に有効です。'
+  });
+
+  // セクションでグループ化
+  var sections = {};
+  items.forEach(function(item){
+    if(!sections[item.section]) sections[item.section]=[];
+    sections[item.section].push(item);
+  });
+
+  var totalItems = items.length;
+  var html = '<div class="checklist-card">';
+  html += '<div class="checklist-title">📋 月次振り返りチェックリスト</div>';
+  html += '<div class="checklist-subtitle">各項目を確認したらチェックを入れてください。データをもとにした気づきが表示されます。</div>';
+
+  Object.entries(sections).forEach(function(sec){
+    html += '<div class="checklist-section">';
+    html += '<div class="checklist-section-label">'+sec[0]+'</div>';
+    sec[1].forEach(function(item){
+      html += '<div class="checklist-item" onclick="toggleCheck(\''+month+'_'+item.id+'\')">';
+      html += '<input type="checkbox" id="chk_'+month+'_'+item.id+'" onclick="event.stopPropagation();saveCheck(\''+month+'_'+item.id+'\')">';
+      html += '<div class="checklist-item-body">';
+      html += '<div class="checklist-item-label" id="lbl_'+month+'_'+item.id+'">'+item.label+'</div>';
+      if(item.hint) html += '<div class="checklist-item-hint">'+item.hint+'</div>';
+      if(item.alert) html += item.alert;
+      html += '</div></div>';
+    });
+    html += '</div>';
+  });
+
+  html += '<div class="checklist-progress">';
+  html += '<div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-progress-fill" style="width:0%"></div></div>';
+  html += '<div class="checklist-progress-label" id="cl-progress-label">0 / '+totalItems+' 完了</div>';
+  html += '</div></div>';
+
+  return html;
+}
+
+function getPrevMonth(ym){
+  var y=parseInt(ym.slice(0,4)),m=parseInt(ym.slice(5,7));
+  m--; if(m===0){m=12;y--;}
+  return y+'-'+(m<10?'0':'')+m;
+}
+
+function toggleCheck(key){
+  var cb=document.getElementById('chk_'+key);
+  if(cb){ cb.checked=!cb.checked; saveCheck(key); }
+}
+
+function saveCheck(key){
+  var cb=document.getElementById('chk_'+key);
+  if(!cb)return;
+  var stored=JSON.parse(localStorage.getItem('cl_checks')||'{}');
+  stored[key]=cb.checked;
+  localStorage.setItem('cl_checks',JSON.stringify(stored));
+  var lbl=document.getElementById('lbl_'+key);
+  if(lbl) lbl.className='checklist-item-label'+(cb.checked?' checked':'');
+  updateChecklistProgress();
+}
+
+function restoreChecklist(month){
+  var stored=JSON.parse(localStorage.getItem('cl_checks')||'{}');
+  Object.keys(stored).forEach(function(key){
+    if(key.slice(0,7)!==month)return;
+    var cb=document.getElementById('chk_'+key);
+    if(cb){ cb.checked=stored[key]; }
+    var lbl=document.getElementById('lbl_'+key);
+    if(lbl) lbl.className='checklist-item-label'+(stored[key]?' checked':'');
+  });
+  updateChecklistProgress();
+}
+
+function updateChecklistProgress(){
+  var all=document.querySelectorAll('.checklist-item input[type=checkbox]');
+  var checked=document.querySelectorAll('.checklist-item input[type=checkbox]:checked');
+  var total=all.length, done=checked.length;
+  var pct=total?Math.round(done/total*100):0;
+  var fill=document.getElementById('cl-progress-fill');
+  var lbl=document.getElementById('cl-progress-label');
+  if(fill) fill.style.width=pct+'%';
+  if(lbl) lbl.textContent=done+' / '+total+' 完了';
 }
 
 function switchView(v){
