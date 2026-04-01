@@ -411,6 +411,17 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
           <select id="r-age"><option value="">選択</option><option>10代</option><option>20代</option><option>30代</option><option>40代</option><option>50代</option><option>60代以上</option></select>
         </div>
       </div>
+      <div class="field"><label class="field-label">職業</label>
+        <select id="r-job">
+          <option value="">選択</option>
+          <option>経営者/自営業</option>
+          <option>会社員</option>
+          <option>主婦</option>
+          <option>主夫</option>
+          <option>パート/アルバイト</option>
+          <option>その他</option>
+        </select>
+      </div>
       <div class="two-col">
         <div class="field"><label class="field-label">来店日 <span class="req">*</span></label><input type="date" id="r-date"></div>
         <div class="field"><label class="field-label">時間帯</label>
@@ -574,6 +585,7 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
           <th onclick="sortTable('kana')" id="th-kana">名前 ↕</th>
           <th onclick="sortTable('gender')" id="th-gender">性別 ↕</th>
           <th onclick="sortTable('age')" id="th-age">年代 ↕</th>
+          <th onclick="sortTable('job')" id="th-job">職業 ↕</th>
           <th onclick="sortTable('lastDate')" id="th-lastDate">最終来店日 ↕</th>
           <th class="no-sort">来店回数</th>
           <th onclick="sortTable('totalBuy')" id="th-totalBuy">累計買取 ↕</th>
@@ -939,7 +951,7 @@ function submitForm(){
 
   var customerData={
     name:name,kana:document.getElementById('r-kana').value.trim(),
-    gender:document.getElementById('r-gender').value,age:document.getElementById('r-age').value,
+    gender:document.getElementById('r-gender').value,age:document.getElementById('r-age').value,job:document.getElementById('r-job').value,
     line:lineEl?lineEl.value:'',
     area:document.getElementById('r-area').value.trim(),brand:document.getElementById('r-brand').value.trim(),
     familyHusband:document.getElementById('r-family-husband').checked,familyWife:document.getElementById('r-family-wife').checked,familyKids:document.getElementById('r-family-kids').checked,
@@ -965,7 +977,7 @@ function submitForm(){
 
 function resetForm(){
   ['r-name','r-kana','r-area','r-brand','r-trigger-other','r-reason-other','r-approach-other','r-success-reason-other','r-fail-reason-other'].forEach(function(id){document.getElementById(id).value='';});
-  ['r-gender','r-age','r-staff','r-result','r-time'].forEach(function(id){document.getElementById(id).value='';});
+  ['r-gender','r-age','r-job','r-staff','r-result','r-time'].forEach(function(id){document.getElementById(id).value='';});
   ['r-buy-amount','r-sell-amount'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('r-memo').value='';
@@ -1019,6 +1031,7 @@ function renderList(){
       '</td>'+
       '<td><span class="editable" data-key="'+k+'" data-field="gender" data-type="select" data-opts="[\'\',\'女性\',\'男性\',\'その他\']">'+escHtml(c.gender||'')+'</span></td>'+
       '<td><span class="editable" data-key="'+k+'" data-field="age" data-type="select" data-opts="[\'\',\'10代\',\'20代\',\'30代\',\'40代\',\'50代\',\'60代以上\']">'+escHtml(c.age||'')+'</span></td>'+
+      '<td><span class="editable" data-key="'+k+'" data-field="job" data-type="select" data-opts="[\'\',\'経営者/自営業\',\'会社員\',\'主婦\',\'主夫\',\'パート/アルバイト\',\'その他\']">'+escHtml(c.job||'')+'</span></td>'+
       '<td>'+escHtml(c.lastDate||'')+(c.lastTime?'<br><span style="font-size:11px;color:var(--ink-mute)">'+escHtml(c.lastTime)+'</span>':'')+'</td>'+
       '<td style="text-align:center"><span style="font-weight:700">'+( c.visitCount||1)+'</span><span style="font-size:11px;color:var(--ink-mute)"> 回</span></td>'+
       '<td class="amount-cell"><span class="amount-total">'+( (c.totalBuy||0)>0?fmtYen(c.totalBuy):'—')+'</span></td>'+
@@ -1104,7 +1117,7 @@ function renderDetailInfo(k){
   var c=customers[k];if(!c)return;
   var fam=[];if(c.familyHusband)fam.push('旦那様の服ありそう');if(c.familyWife)fam.push('奥様の服ありそう');if(c.familyKids)fam.push('子供服ありそう');
   var rows=[
-    ['最終来店日',c.lastDate+(c.lastTime?' '+c.lastTime:'')],['ふりがな',c.kana],['性別',c.gender],['年代',c.age],
+    ['最終来店日',c.lastDate+(c.lastTime?' '+c.lastTime:'')],['ふりがな',c.kana],['性別',c.gender],['年代',c.age],['職業',c.job],
     ['LINE登録',c.line],['よく買うエリア',c.area],['よく買うブランド',c.brand],['家族の服',fam.join('、')]
   ];
   var infoHtml='<div class="amount-summary">'+
@@ -1459,6 +1472,10 @@ function renderAnalytics(){
   var genderBuckets = {'女性':0,'男性':0,'その他':0,'不明':0};
   monthCustomers.forEach(function(c){ var g=c.gender||'不明'; if(genderBuckets[g]!==undefined)genderBuckets[g]++;else genderBuckets['不明']++; });
 
+  // 職業
+  var jobBuckets = {'経営者/自営業':0,'会社員':0,'主婦':0,'主夫':0,'パート/アルバイト':0,'その他':0,'不明':0};
+  monthCustomers.forEach(function(c){ var j=c.job||'不明'; if(jobBuckets[j]!==undefined)jobBuckets[j]++;else jobBuckets['不明']++; });
+
   // 来店きっかけ（visitData が必要だが customers に triggers なし → lastVisit から取れないためcustomers.triggersを使う）
   // 今回はcustomers直下のlastResultとlastStaffのみ保持。きっかけ・成立理由・失注理由はvisitsに保存されているため
   // visitDataのサマリーをcustomersに保持していないので、ここではcustomersに保存済みのデータを使う
@@ -1523,6 +1540,20 @@ function renderAnalytics(){
     var pct = Math.round(n/maxTime*100);
     html += barRow(t, n, pct, 'mute');
   });
+  html += '</div></div>';
+
+  // 職業分布
+  html += '<div class="analytics-card full"><div class="analytics-card-title">職業分布</div>';
+  html += '<div class="bar-chart-h">';
+  var hasJob = Object.values(jobBuckets).some(function(v){return v>0;});
+  if(hasJob){
+    var maxJob = Math.max.apply(null, Object.values(jobBuckets).concat([1]));
+    Object.entries(jobBuckets).sort(function(a,b){return b[1]-a[1];}).forEach(function(e){
+      if(!e[1])return;
+      var pct = Math.round(e[1]/maxJob*100);
+      html += barRow(e[0], e[1], pct, 'navy');
+    });
+  } else { html += '<div class="no-data">職業データなし</div>'; }
   html += '</div></div>';
 
   // 来店きっかけ
@@ -1747,8 +1778,8 @@ function renderChecklist(total, success, fail, successRate, repeatRate, totalBuy
   // 6. 顧客属性
   items.push({
     id:'a1', section:'👥 顧客属性の把握',
-    label:'今月の年代・性別の構成を前月と比較した',
-    hint:'構成が変化しているなら、集客施策の対象が変わっているサインかもしれません。'
+    label:'今月の年代・性別・職業の構成を前月と比較した',
+    hint:'構成が変化しているなら、集客施策の対象が変わっているサインかもしれません。職業別の傾向（経営者は単価が高いなど）も確認しましょう。'
   });
 
   items.push({
