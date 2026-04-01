@@ -805,7 +805,7 @@ var isLoggedIn = false;
 
 function checkLogin() {
   // セッション中はログイン済みを保持
-  if (sessionStorage.getItem('ca_auth') === '1') { isLoggedIn = true; return true; }
+  if (localStorage.getItem('ca_auth') === '1') { isLoggedIn = true; return true; }
   return false;
 }
 
@@ -848,7 +848,7 @@ function doLogin() {
 
 function onLoginSuccess() {
   isLoggedIn = true;
-  sessionStorage.setItem('ca_auth', '1');
+  localStorage.setItem('ca_auth', '1');
   document.getElementById('login-screen').classList.remove('show');
   document.getElementById('login-error').classList.remove('show');
   document.getElementById('login-password').value = '';
@@ -863,7 +863,7 @@ function onLoginSuccess() {
 
 function logout() {
   if (!confirm('ログアウトしますか？')) return;
-  sessionStorage.removeItem('ca_auth');
+  localStorage.removeItem('ca_auth');
   isLoggedIn = false;
   document.getElementById('login-screen').classList.add('show');
   document.getElementById('login-password').value = '';
