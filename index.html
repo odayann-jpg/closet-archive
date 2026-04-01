@@ -344,7 +344,46 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
 .checklist-progress-bar{flex:1;background:var(--cream-dark);border-radius:4px;height:8px;overflow:hidden;}
 .checklist-progress-fill{height:100%;background:var(--gold-light);border-radius:4px;transition:width .4s ease;}
 .checklist-progress-label{font-size:12px;color:var(--ink-mute);white-space:nowrap;}
-@media(max-width:600px){.analytics-grid{grid-template-columns:1fr;}.kpi-grid{grid-template-columns:repeat(2,1fr);}.analytics-card.full{grid-column:1;}}
+/* AI ADVISOR */
+.ai-wrap{max-width:800px;margin:0 auto;padding:20px 16px 80px;}
+.ai-header-card{background:linear-gradient(135deg,#0f1e3c 0%,#1a3a6b 100%);border-radius:var(--radius);padding:24px;margin-bottom:20px;color:var(--white);}
+.ai-header-title{font-family:'Playfair Display',serif;font-size:22px;color:#7aa3d4;margin-bottom:4px;}
+.ai-header-desc{font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;}
+.ai-month-select{display:flex;align-items:center;gap:10px;margin-top:14px;}
+.ai-month-select label{font-size:12px;color:rgba(255,255,255,.6);}
+.ai-month-select select{padding:6px 28px 6px 10px;border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--white);font-size:13px;font-family:'Noto Sans JP',sans-serif;-webkit-appearance:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+.ai-quick-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.ai-quick-btn{padding:8px 16px;background:var(--white);border:1.5px solid var(--cream-deep);border-radius:20px;cursor:pointer;font-size:12px;font-family:'Noto Sans JP',sans-serif;color:var(--ink-soft);transition:all .15s;white-space:nowrap;}
+.ai-quick-btn:hover{border-color:var(--gold-light);background:var(--accent-pale);color:var(--ink);}
+.ai-quick-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ai-chat{background:var(--white);border-radius:var(--radius);border:1px solid var(--cream-deep);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:400px;}
+.ai-messages{flex:1;padding:20px;display:flex;flex-direction:column;gap:14px;max-height:520px;overflow-y:auto;}
+.ai-msg{display:flex;gap:10px;align-items:flex-start;}
+.ai-msg.user{flex-direction:row-reverse;}
+.ai-msg-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.ai-msg-avatar.bot{background:var(--gold);color:var(--white);}
+.ai-msg-avatar.user{background:var(--cream-dark);color:var(--ink-mute);}
+.ai-msg-bubble{max-width:80%;padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.7;}
+.ai-msg-bubble.bot{background:var(--accent-pale);color:var(--ink);border-radius:4px 12px 12px 12px;}
+.ai-msg-bubble.user{background:var(--gold);color:var(--white);border-radius:12px 4px 12px 12px;}
+.ai-msg-bubble p{margin-bottom:8px;}
+.ai-msg-bubble p:last-child{margin-bottom:0;}
+.ai-msg-bubble strong{font-weight:700;}
+.ai-msg-bubble ul{padding-left:16px;margin:6px 0;}
+.ai-msg-bubble ul li{margin-bottom:4px;}
+.ai-thinking{display:flex;gap:4px;align-items:center;padding:4px 0;}
+.ai-thinking span{width:7px;height:7px;background:var(--gold-light);border-radius:50%;animation:thinking .8s ease-in-out infinite;}
+.ai-thinking span:nth-child(2){animation-delay:.15s;}
+.ai-thinking span:nth-child(3){animation-delay:.3s;}
+@keyframes thinking{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.ai-input-area{border-top:1px solid var(--cream-dark);padding:14px 16px;display:flex;gap:10px;align-items:flex-end;}
+.ai-textarea{flex:1;padding:10px 14px;border:1.5px solid var(--cream-deep);border-radius:var(--radius-sm);font-size:14px;font-family:'Noto Sans JP',sans-serif;background:var(--cream);color:var(--ink);resize:none;min-height:44px;max-height:120px;line-height:1.5;transition:border-color .15s;}
+.ai-textarea:focus{outline:none;border-color:var(--gold-light);background:var(--white);}
+.ai-send-btn{padding:10px 18px;background:var(--gold);color:var(--white);border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif;transition:background .15s;white-space:nowrap;flex-shrink:0;}
+.ai-send-btn:hover{background:var(--gold-light);}
+.ai-send-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ai-empty{text-align:center;padding:40px 20px;color:var(--ink-mute);}
+.ai-empty .icon{font-size:36px;margin-bottom:10px;opacity:.5;}
 </style>
 </head>
 <body>
@@ -381,6 +420,7 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
     <button class="nav-btn active" id="nav-register" onclick="switchView('register')">＋ 登録</button>
     <button class="nav-btn" id="nav-list" onclick="switchView('list')">一覧</button>
     <button class="nav-btn" id="nav-analytics" onclick="switchView('analytics')">分析</button>
+    <button class="nav-btn" id="nav-ai" onclick="switchView('ai')">🤖 AI</button>
     <button class="settings-btn" onclick="openSettings()">⚙</button>
     <button class="settings-btn" onclick="logout()" style="margin-left:2px;">ログアウト</button>
   </nav>
@@ -607,6 +647,44 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
   <div class="analytics-wrap">
     <div class="analytics-month-tabs" id="month-tabs"></div>
     <div id="analytics-content"></div>
+  </div>
+</div>
+
+<!-- AI ADVISOR VIEW -->
+<div id="view-ai" class="view">
+  <div class="ai-wrap">
+    <div class="ai-header-card">
+      <div class="ai-header-title">🤖 AI 経営アドバイザー</div>
+      <div class="ai-header-desc">顧客データをもとに経営分析・施策提案・自由質問ができます。</div>
+      <div class="ai-month-select">
+        <label>分析対象月：</label>
+        <select id="ai-month-select" onchange="aiMonthChanged()"></select>
+      </div>
+    </div>
+
+    <div class="ai-quick-btns">
+      <button class="ai-quick-btn" onclick="aiQuick('summary')">📊 今月の総合分析</button>
+      <button class="ai-quick-btn" onclick="aiQuick('advice')">💡 経営アドバイス</button>
+      <button class="ai-quick-btn" onclick="aiQuick('next')">🎯 来月の施策提案</button>
+      <button class="ai-quick-btn" onclick="aiQuick('fail')">🔍 失注分析と対策</button>
+      <button class="ai-quick-btn" onclick="aiQuick('customer')">👥 顧客属性の傾向</button>
+      <button class="ai-quick-btn" onclick="aiQuick('repeat')">🔄 リピート率改善策</button>
+    </div>
+
+    <div class="ai-chat">
+      <div class="ai-messages" id="ai-messages">
+        <div class="ai-empty">
+          <div class="icon">🤖</div>
+          <p>上のボタンを押すか、下のテキストボックスから<br>自由に質問してください。</p>
+        </div>
+      </div>
+      <div class="ai-input-area">
+        <textarea class="ai-textarea" id="ai-input" placeholder="例：成約率を上げるにはどうすればいいですか？" rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiSend();}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        <button class="ai-send-btn" id="ai-send-btn" onclick="aiSend()">送信</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1881,6 +1959,210 @@ function updateChecklistProgress(){
   if(lbl) lbl.textContent=done+' / '+total+' 完了';
 }
 
+// ══ AI ADVISOR ══
+var aiChatHistory = [];
+var aiCurrentMonth = '';
+var aiLoading = false;
+
+function initAiView(){
+  // 月選択を構築
+  var months = {};
+  Object.values(customers).forEach(function(c){ if(c.lastDate) months[c.lastDate.slice(0,7)]=true; });
+  var sorted = Object.keys(months).sort().reverse();
+  var sel = document.getElementById('ai-month-select');
+  if(!sel) return;
+  sel.innerHTML = sorted.map(function(m){
+    var label = m.slice(0,4)+'年'+(parseInt(m.slice(5,7)))+'月';
+    return '<option value="'+m+'">'+label+'</option>';
+  }).join('');
+  if(sorted.length && !aiCurrentMonth) aiCurrentMonth = sorted[0];
+  if(aiCurrentMonth) sel.value = aiCurrentMonth;
+}
+
+function aiMonthChanged(){
+  var sel = document.getElementById('ai-month-select');
+  if(sel) aiCurrentMonth = sel.value;
+}
+
+// 指定月のデータサマリーを文字列で生成
+function buildDataContext(month){
+  var mc = Object.values(customers).filter(function(c){ return (c.lastDate||'').slice(0,7)===month; });
+  var total = mc.length;
+  var success = mc.filter(function(c){return c.lastResult==='成立';}).length;
+  var fail = mc.filter(function(c){return c.lastResult==='不成立';}).length;
+  var successRate = total ? Math.round(success/total*100) : 0;
+  var totalBuy = mc.reduce(function(s,c){return s+parseInt(c.totalBuy||0);},0);
+  var totalSell = mc.reduce(function(s,c){return s+parseInt(c.totalSell||0);},0);
+  var repeatCount = mc.filter(function(c){return parseInt(c.visitCount||1)>1;}).length;
+  var repeatRate = total ? Math.round(repeatCount/total*100) : 0;
+
+  // 集計
+  var triggerCount={}, successReasonCount={}, failReasonCount={}, timeCount={}, ageCount={}, genderCount={}, jobCount={};
+  mc.forEach(function(c){
+    (c.triggers||[]).forEach(function(t){triggerCount[t]=(triggerCount[t]||0)+1;});
+    (c.successReasons||[]).forEach(function(r){successReasonCount[r]=(successReasonCount[r]||0)+1;});
+    (c.failReasons||[]).forEach(function(r){failReasonCount[r]=(failReasonCount[r]||0)+1;});
+    if(c.lastTime) timeCount[c.lastTime]=(timeCount[c.lastTime]||0)+1;
+    if(c.age) ageCount[c.age]=(ageCount[c.age]||0)+1;
+    if(c.gender) genderCount[c.gender]=(genderCount[c.gender]||0)+1;
+    if(c.job) jobCount[c.job]=(jobCount[c.job]||0)+1;
+  });
+
+  // 前月データ
+  var prevMonth = getPrevMonth(month);
+  var pm = Object.values(customers).filter(function(c){return (c.lastDate||'').slice(0,7)===prevMonth;});
+  var prevTotal = pm.length;
+  var prevSuccess = pm.filter(function(c){return c.lastResult==='成立';}).length;
+  var prevRate = prevTotal ? Math.round(prevSuccess/prevTotal*100) : 0;
+  var prevRepeat = pm.filter(function(c){return parseInt(c.visitCount||1)>1;}).length;
+  var prevRepeatRate = prevTotal ? Math.round(prevRepeat/prevTotal*100) : 0;
+
+  var label = month.slice(0,4)+'年'+(parseInt(month.slice(5,7)))+'月';
+
+  var ctx = '【'+label+' 顧客データ】\n';
+  ctx += '来店数: '+total+'件（前月: '+prevTotal+'件）\n';
+  ctx += '成立: '+success+'件 / 不成立: '+fail+'件 / 成約率: '+successRate+'%（前月: '+prevRate+'%）\n';
+  ctx += '買取金額合計: '+totalBuy.toLocaleString()+'円 / 購入金額合計: '+totalSell.toLocaleString()+'円\n';
+  ctx += 'リピート率: '+repeatRate+'%（前月: '+prevRepeatRate+'%）/ リピーター: '+repeatCount+'件\n\n';
+
+  if(Object.keys(ageCount).length) ctx += '年代: '+JSON.stringify(ageCount)+'\n';
+  if(Object.keys(genderCount).length) ctx += '性別: '+JSON.stringify(genderCount)+'\n';
+  if(Object.keys(jobCount).length) ctx += '職業: '+JSON.stringify(jobCount)+'\n';
+  if(Object.keys(timeCount).length) ctx += '時間帯別来店: '+JSON.stringify(timeCount)+'\n';
+  if(Object.keys(triggerCount).length) ctx += '来店きっかけ: '+JSON.stringify(triggerCount)+'\n';
+  if(Object.keys(successReasonCount).length) ctx += '成立理由: '+JSON.stringify(successReasonCount)+'\n';
+  if(Object.keys(failReasonCount).length) ctx += '失注理由: '+JSON.stringify(failReasonCount)+'\n';
+
+  return ctx;
+}
+
+function aiQuick(type){
+  var prompts = {
+    summary: '今月のデータを総合的に分析して、経営状況を教えてください。',
+    advice: '今月のデータをもとに、経営改善のための具体的なアドバイスを3つ教えてください。',
+    next: '今月のデータをもとに、来月実施すべき集客・接客施策を具体的に提案してください。',
+    fail: '失注データを詳しく分析して、成約率を上げるための改善策を教えてください。',
+    customer: '顧客の年代・性別・職業・来店時間帯の傾向を分析して、ターゲット像と接客のヒントを教えてください。',
+    repeat: 'リピート率のデータをもとに、リピーターを増やすための施策を具体的に提案してください。'
+  };
+  var input = document.getElementById('ai-input');
+  if(input) input.value = prompts[type]||'';
+  aiSend();
+}
+
+function aiSend(){
+  if(aiLoading) return;
+  var inputEl = document.getElementById('ai-input');
+  var userMsg = (inputEl ? inputEl.value.trim() : '');
+  if(!userMsg) return;
+  if(inputEl) { inputEl.value=''; inputEl.style.height='auto'; }
+
+  addAiMessage('user', userMsg);
+
+  var month = aiCurrentMonth || analyticsMonth;
+  var dataCtx = month ? buildDataContext(month) : '（データなし）';
+  var label = month ? month.slice(0,4)+'年'+(parseInt(month.slice(5,7)))+'月' : '';
+
+  var systemPrompt = 'あなたはブランド古着買取店「スタイリストクローゼット」の経営アドバイザーです。'+
+    '以下の顧客・売上データをもとに、オーナーの質問に日本語で具体的・実践的に答えてください。'+
+    '数字を引用しながら分析し、すぐに実行できる施策を提案してください。回答は読みやすいよう適切に改行してください。\n\n'+
+    dataCtx;
+
+  // チャット履歴を構築（直近6件まで）
+  var messages = aiChatHistory.slice(-6).concat([{role:'user', content: userMsg}]);
+
+  addAiThinking();
+  aiLoading = true;
+  setAiButtons(true);
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      system: systemPrompt,
+      messages: messages
+    })
+  }).then(function(res){ return res.json(); })
+  .then(function(data){
+    removeAiThinking();
+    var reply = '';
+    if(data.content && data.content[0] && data.content[0].text){
+      reply = data.content[0].text;
+    } else if(data.error){
+      reply = '⚠️ エラー: '+data.error.message;
+    } else {
+      reply = '⚠️ 応答を取得できませんでした。';
+    }
+    addAiMessage('bot', reply);
+    // 履歴に追加
+    aiChatHistory.push({role:'user', content:userMsg});
+    aiChatHistory.push({role:'assistant', content:reply});
+    if(aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
+  })
+  .catch(function(e){
+    removeAiThinking();
+    addAiMessage('bot', '⚠️ 通信エラーが発生しました。インターネット接続を確認してください。');
+  })
+  .finally(function(){
+    aiLoading = false;
+    setAiButtons(false);
+  });
+}
+
+function addAiMessage(role, text){
+  var container = document.getElementById('ai-messages');
+  if(!container) return;
+  // 空状態を削除
+  var empty = container.querySelector('.ai-empty');
+  if(empty) empty.remove();
+
+  var div = document.createElement('div');
+  div.className = 'ai-msg '+(role==='user'?'user':'');
+  var avatar = role==='bot' ? '🤖' : '👤';
+  // テキストをHTMLに変換（改行・太字）
+  var html = formatAiText(text);
+  div.innerHTML =
+    '<div class="ai-msg-avatar '+(role==='bot'?'bot':'user')+'">'+avatar+'</div>'+
+    '<div class="ai-msg-bubble '+(role==='bot'?'bot':'user')+'">'+html+'</div>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function formatAiText(text){
+  // **太字** → <strong>
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // 改行を<br>または<p>に
+  var paras = text.split(/\n\n+/);
+  return paras.map(function(p){
+    var lines = p.split('\n').join('<br>');
+    return '<p>'+lines+'</p>';
+  }).join('');
+}
+
+function addAiThinking(){
+  var container = document.getElementById('ai-messages');
+  if(!container) return;
+  var div = document.createElement('div');
+  div.className = 'ai-msg'; div.id = 'ai-thinking-bubble';
+  div.innerHTML = '<div class="ai-msg-avatar bot">🤖</div>'+
+    '<div class="ai-msg-bubble bot"><div class="ai-thinking"><span></span><span></span><span></span></div></div>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeAiThinking(){
+  var el = document.getElementById('ai-thinking-bubble');
+  if(el) el.remove();
+}
+
+function setAiButtons(disabled){
+  document.querySelectorAll('.ai-quick-btn').forEach(function(b){b.disabled=disabled;});
+  var btn = document.getElementById('ai-send-btn');
+  if(btn) btn.disabled = disabled;
+}
+
 function switchView(v){
   document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
   document.getElementById('view-'+v).classList.add('active');
@@ -1888,6 +2170,7 @@ function switchView(v){
   var nb=document.getElementById('nav-'+v);if(nb)nb.classList.add('active');
   if(v==='list')renderList();
   if(v==='analytics'){buildMonthTabs();renderAnalytics();}
+  if(v==='ai'){initAiView();}
 }
 
 // ══ TOAST ══
