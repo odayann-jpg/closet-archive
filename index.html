@@ -1039,7 +1039,7 @@ function submitForm(){
     familyHusband:document.getElementById('r-family-husband').checked,familyWife:document.getElementById('r-family-wife').checked,familyKids:document.getElementById('r-family-kids').checked,
     createdAt:Date.now(),
     totalBuy:buyAmt,totalSell:sellAmt,visitCount:1,lastDate:date,lastTime:visitTime,lastStaff:staff,lastResult:result,
-    triggers:triggers,successReasons:successReasons,failReasons:failReasons
+    triggers:triggers,reasons:reasons,successReasons:successReasons,failReasons:failReasons
   };
   var visitData={
     date:date,time:visitTime,staff:staff,result:result,buyAmount:buyAmt,sellAmount:sellAmt,
@@ -1335,7 +1335,8 @@ function saveVisit(k){
     return db.ref('customers/'+k).update({
       totalBuy:newTotalBuy,totalSell:newTotalSell,visitCount:newCount,
       lastDate:newLastDate,lastTime:newLastTime,lastStaff:visitData.staff,lastResult:visitData.result,
-      successReasons:visitData.successReasons,failReasons:visitData.failReasons
+      successReasons:visitData.successReasons,failReasons:visitData.failReasons,
+      reasons:visitData.reasons
     });
   }).then(function(){
     showToast('✓ 来店を記録しました');
