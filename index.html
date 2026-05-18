@@ -479,6 +479,15 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
           <select id="r-result" onchange="onResultChange()"><option value="">選択</option><option>成立</option><option>不成立</option></select>
         </div>
       </div>
+      <div class="field"><label class="field-label">買取アイテム</label>
+        <div class="check-group" id="r-item-group">
+          <label><input type="checkbox" value="メンズ"><span>メンズ</span></label>
+          <label><input type="checkbox" value="レディース"><span>レディース</span></label>
+          <label><input type="checkbox" value="キッズ"><span>キッズ</span></label>
+          <label><input type="checkbox" value="その他" id="item-other-cb"><span>その他</span></label>
+        </div>
+        <div class="conditional-field" id="item-other-wrap"><input type="text" id="r-item-other" placeholder="その他のアイテム"></div>
+      </div>
       <!-- 成立理由 -->
       <div class="conditional-field" id="success-reason-wrap">
         <div class="field">
@@ -727,6 +736,7 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
         <button class="settings-tab" onclick="switchSettingsTab('successReasons',this)">成立理由</button>
         <button class="settings-tab" onclick="switchSettingsTab('failReasons',this)">失注理由</button>
         <button class="settings-tab" onclick="switchSettingsTab('approaches',this)">アプローチ</button>
+        <button class="settings-tab" onclick="switchSettingsTab('items',this)">買取アイテム</button>
         <button class="settings-tab" onclick="switchSettingsTab('password',this)">🔑 PW</button>
       </div>
       <div class="settings-panel active" id="panel-staff">
@@ -764,6 +774,12 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
         <div class="add-item-row"><input class="add-item-input" id="new-failReasons-input" placeholder="新しい選択肢" onkeydown="if(event.key==='Enter')addSettingsItem('failReasons')"><button class="add-item-btn" onclick="addSettingsItem('failReasons')">＋ 追加</button></div>
         <div class="settings-note">※「その他」は常に表示されます。</div>
       </div>
+      <div class="settings-panel" id="panel-items">
+        <div class="settings-section-label">買取アイテムの選択肢</div>
+        <div class="item-list" id="list-items"></div>
+        <div class="add-item-row"><input class="add-item-input" id="new-items-input" placeholder="新しい選択肢" onkeydown="if(event.key==='Enter')addSettingsItem('items')"><button class="add-item-btn" onclick="addSettingsItem('items')">＋ 追加</button></div>
+        <div class="settings-note">※「その他」は常に表示されます。</div>
+      </div>
       <button class="settings-save-btn" onclick="saveSettings()">変更を保存する</button>
       <div id="panel-password" class="settings-panel">
         <div class="settings-section-label">パスワード変更</div>
@@ -792,7 +808,7 @@ tbody td{padding:9px 12px;vertical-align:middle;font-size:13px;}
 <script>
 // ══ STATE ══
 var db=null,customers={},staffList=[],sortKey='lastDate',sortAsc=false,editingCell=null,toastTimer=null;
-var masterData={triggers:['チラシ','SNS','知人の紹介','通りすがり','Googleマップ'],reasons:['サイズの変化','テイストの変化','断捨離・整理','他店での不満'],approaches:['家族の服も査定できる旨を伝えた','チラシを渡した'],successReasons:['価格に納得した','スタッフの対応が良かった','買取スピードが早い','リピート'],failReasons:['価格が合わなかった','他店に決めた','持ち帰りたい','検討中']};
+var masterData={triggers:['チラシ','SNS','知人の紹介','通りすがり','Googleマップ'],reasons:['サイズの変化','テイストの変化','断捨離・整理','他店での不満'],approaches:['家族の服も査定できる旨を伝えた','チラシを渡した'],successReasons:['価格に納得した','スタッフの対応が良かった','買取スピードが早い','リピート'],failReasons:['価格が合わなかった','他店に決めた','持ち帰りたい','検討中'],items:['メンズ','レディース','キッズ']};
 var settingsDraft={},settingsCurrentTab='staff';
 var currentDetailKey=null;
 
@@ -901,8 +917,8 @@ function startFirebaseListeners(){
   });
   db.ref('masterData').on('value',function(snap){
     var d=snap.val();
-    if(d){if(d.triggers)masterData.triggers=d.triggers;if(d.reasons)masterData.reasons=d.reasons;if(d.approaches)masterData.approaches=d.approaches;if(d.successReasons)masterData.successReasons=d.successReasons;if(d.failReasons)masterData.failReasons=d.failReasons;}
-    else{db.ref('masterData').set({triggers:masterData.triggers,reasons:masterData.reasons,approaches:masterData.approaches,successReasons:masterData.successReasons,failReasons:masterData.failReasons});}
+    if(d){if(d.triggers)masterData.triggers=d.triggers;if(d.reasons)masterData.reasons=d.reasons;if(d.approaches)masterData.approaches=d.approaches;if(d.successReasons)masterData.successReasons=d.successReasons;if(d.failReasons)masterData.failReasons=d.failReasons;if(d.items)masterData.items=d.items;else db.ref('masterData/items').set(masterData.items);}
+    else{db.ref('masterData').set({triggers:masterData.triggers,reasons:masterData.reasons,approaches:masterData.approaches,successReasons:masterData.successReasons,failReasons:masterData.failReasons,items:masterData.items});}
     rebuildCheckGroups();
   });
   db.ref('customers').on('value',function(snap){
@@ -942,7 +958,7 @@ var FIREBASE_CONFIG = {
 // ══ BOOT ══
 document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
 (function(){
-  [['trigger-other-cb','trigger-other-wrap'],['reason-other-cb','reason-other-wrap'],['approach-other-cb','approach-other-wrap'],['success-reason-other-cb','success-reason-other-wrap'],['fail-reason-other-cb','fail-reason-other-wrap']].forEach(function(p){
+  [['trigger-other-cb','trigger-other-wrap'],['reason-other-cb','reason-other-wrap'],['approach-other-cb','approach-other-wrap'],['success-reason-other-cb','success-reason-other-wrap'],['fail-reason-other-cb','fail-reason-other-wrap'],['item-other-cb','item-other-wrap']].forEach(function(p){
     var cb=document.getElementById(p[0]),wrap=document.getElementById(p[1]);
     if(cb&&wrap)cb.addEventListener('change',function(){wrap.classList.toggle('show',cb.checked);});
   });
@@ -980,6 +996,7 @@ function rebuildCheckGroups(){
   rebuildGroup('r-approach-group',masterData.approaches,'approach-other-cb','approach-other-wrap');
   rebuildGroup('r-success-reason-group',masterData.successReasons,'success-reason-other-cb','success-reason-other-wrap');
   rebuildGroup('r-fail-reason-group',masterData.failReasons,'fail-reason-other-cb','fail-reason-other-wrap');
+  rebuildGroup('r-item-group',masterData.items,'item-other-cb','item-other-wrap');
 }
 function rebuildGroup(groupId,items,otherCbId,otherWrapId){
   var group=document.getElementById(groupId);if(!group)return;
@@ -1021,9 +1038,11 @@ function submitForm(){
 
   var triggers=getChecked('r-trigger-group'),reasons=getChecked('r-reason-group'),approaches=getChecked('r-approach-group');
   var successReasons=getChecked('r-success-reason-group'),failReasons=getChecked('r-fail-reason-group');
+  var items=getChecked('r-item-group');
   function replOther(arr,fid){var i=arr.indexOf('その他');if(i===-1)return arr;var r=arr.filter(function(x){return x!=='その他';});r.push('その他:'+document.getElementById(fid).value);return r;}
   triggers=replOther(triggers,'r-trigger-other');reasons=replOther(reasons,'r-reason-other');approaches=replOther(approaches,'r-approach-other');
   successReasons=replOther(successReasons,'r-success-reason-other');failReasons=replOther(failReasons,'r-fail-reason-other');
+  items=replOther(items,'r-item-other');
 
   var buyAmt=parseInt(document.getElementById('r-buy-amount').value)||0;
   var sellAmt=parseInt(document.getElementById('r-sell-amount').value)||0;
@@ -1040,12 +1059,12 @@ function submitForm(){
     familyHusband:document.getElementById('r-family-husband').checked,familyWife:document.getElementById('r-family-wife').checked,familyKids:document.getElementById('r-family-kids').checked,
     createdAt:Date.now(),
     totalBuy:buyAmt,totalSell:sellAmt,visitCount:1,lastDate:date,lastTime:visitTime,lastStaff:staff,lastResult:result,
-    triggers:triggers,reasons:reasons,successReasons:successReasons,failReasons:failReasons
+    triggers:triggers,reasons:reasons,successReasons:successReasons,failReasons:failReasons,items:items
   };
   var visitData={
     date:date,time:visitTime,staff:staff,result:result,buyAmount:buyAmt,sellAmount:sellAmt,
     triggers:triggers,reasons:reasons,memo:document.getElementById('r-memo').value.trim(),approaches:approaches,
-    successReasons:successReasons,failReasons:failReasons,
+    successReasons:successReasons,failReasons:failReasons,items:items,
     createdAt:Date.now()
   };
 
@@ -1059,14 +1078,14 @@ function submitForm(){
 }
 
 function resetForm(){
-  ['r-name','r-kana','r-area','r-brand','r-trigger-other','r-reason-other','r-approach-other','r-success-reason-other','r-fail-reason-other'].forEach(function(id){document.getElementById(id).value='';});
+  ['r-name','r-kana','r-area','r-brand','r-trigger-other','r-reason-other','r-approach-other','r-success-reason-other','r-fail-reason-other','r-item-other'].forEach(function(id){document.getElementById(id).value='';});
   ['r-gender','r-age','r-job','r-staff','r-result','r-time'].forEach(function(id){document.getElementById(id).value='';});
   ['r-buy-amount','r-sell-amount'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('r-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('r-memo').value='';
   document.querySelectorAll('#view-register input[type=checkbox]').forEach(function(cb){cb.checked=false;});
   document.querySelectorAll('#view-register input[type=radio]').forEach(function(rb){rb.checked=false;});
-  ['trigger-other-wrap','reason-other-wrap','approach-other-wrap','success-reason-other-wrap','fail-reason-other-wrap'].forEach(function(id){document.getElementById(id).classList.remove('show');});
+  ['trigger-other-wrap','reason-other-wrap','approach-other-wrap','success-reason-other-wrap','fail-reason-other-wrap','item-other-wrap'].forEach(function(id){document.getElementById(id).classList.remove('show');});
   document.getElementById('success-reason-wrap').classList.remove('show');
   document.getElementById('fail-reason-wrap').classList.remove('show');
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1229,6 +1248,7 @@ function renderDetailVisits(k){
           '<span class="visit-card-date">'+escHtml(vd.date||'')+(vd.time?' '+escHtml(vd.time):'')+'</span>'+
           '<div class="visit-card-badges">'+resultBadge+(vd.staff?'<span style="font-size:11px;color:var(--ink-mute)">'+escHtml(vd.staff)+'</span>':'')+'</div>'+
         '</div>'+
+        ((vd.items&&vd.items.length)?'<div class="visit-card-body">買取アイテム: '+(vd.items||[]).map(function(r){return '<span class="badge badge-gold">'+escHtml(r)+'</span>';}).join(' ')+'</div>':'') +
         ((vd.reasons&&vd.reasons.length)?'<div class="visit-card-body">手放す理由: '+(vd.reasons||[]).map(function(r){return '<span class="badge badge-gold">'+escHtml(r)+'</span>';}).join(' ')+'</div>':'') +
         ((vd.successReasons&&vd.successReasons.length)?'<div class="visit-card-body" style="color:var(--green-soft)">✓ 成立理由: '+(vd.successReasons||[]).map(function(r){return '<span class="badge badge-success">'+escHtml(r)+'</span>';}).join(' ')+'</div>':'') +
         ((vd.failReasons&&vd.failReasons.length)?'<div class="visit-card-body" style="color:var(--red)">✗ 失注理由: '+(vd.failReasons||[]).map(function(r){return '<span class="badge badge-fail">'+escHtml(r)+'</span>';}).join(' ')+'</div>':'') +
@@ -1272,6 +1292,7 @@ function showAddVisitForm(k){
     '<div class="mini-field"><label class="mini-label">買取結果</label>'+
       '<select id="av-result" onchange="onAvResultChange()"><option value="">選択</option><option>成立</option><option>不成立</option></select>'+
     '</div>'+
+    '<div class="mini-field"><label class="mini-label">買取アイテム</label><div id="av-item-group" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>'+
     '<div id="av-success-wrap" style="display:none"><div class="mini-field"><label class="mini-label">成立理由</label><div id="av-success-group" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div></div>'+
     '<div id="av-fail-wrap" style="display:none"><div class="mini-field"><label class="mini-label">失注理由</label><div id="av-fail-group" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div></div>'+
     '<div class="mini-two">'+
@@ -1287,6 +1308,7 @@ function showAddVisitForm(k){
   // チェックボックス動的生成
   buildAvCheckGroup('av-success-group', masterData.successReasons, 'av-sr');
   buildAvCheckGroup('av-fail-group', masterData.failReasons, 'av-fr');
+  buildAvCheckGroup('av-item-group', masterData.items, 'av-it');
 }
 
 function buildAvCheckGroup(containerId, items, prefix){
@@ -1322,6 +1344,7 @@ function saveVisit(k){
     triggers:[],reasons:[],approaches:[],
     successReasons:getAvChecked('av-success-group'),
     failReasons:getAvChecked('av-fail-group'),
+    items:getAvChecked('av-item-group'),
     createdAt:Date.now()
   };
   setSyncStatus('syncing');
@@ -1350,7 +1373,7 @@ function saveVisit(k){
 // ══ SETTINGS ══
 function openSettings(){
   if(!db){showToast('⚠️ Firebaseに接続してから設定を開いてください');return;}
-  settingsDraft={staff:staffList.slice(),triggers:masterData.triggers.slice(),reasons:masterData.reasons.slice(),approaches:masterData.approaches.slice(),successReasons:masterData.successReasons.slice(),failReasons:masterData.failReasons.slice()};
+  settingsDraft={staff:staffList.slice(),triggers:masterData.triggers.slice(),reasons:masterData.reasons.slice(),approaches:masterData.approaches.slice(),successReasons:masterData.successReasons.slice(),failReasons:masterData.failReasons.slice(),items:masterData.items.slice()};
   renderSettingsPanel('staff');
   document.querySelectorAll('.settings-tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.settings-panel').forEach(function(p){p.classList.remove('active');});
@@ -1420,7 +1443,7 @@ function saveSettings(){
   if(!db){showToast('⚠️ Firebase未接続');return;}
   var btn=document.querySelector('.settings-save-btn');btn.disabled=true;btn.textContent='保存中...';setSyncStatus('syncing');
   var staffObj={};settingsDraft.staff.forEach(function(s,i){staffObj['s'+i]=s;});
-  db.ref().update({'/staff':staffObj,'/masterData/triggers':settingsDraft.triggers,'/masterData/reasons':settingsDraft.reasons,'/masterData/approaches':settingsDraft.approaches,'/masterData/successReasons':settingsDraft.successReasons,'/masterData/failReasons':settingsDraft.failReasons})
+  db.ref().update({'/staff':staffObj,'/masterData/triggers':settingsDraft.triggers,'/masterData/reasons':settingsDraft.reasons,'/masterData/approaches':settingsDraft.approaches,'/masterData/successReasons':settingsDraft.successReasons,'/masterData/failReasons':settingsDraft.failReasons,'/masterData/items':settingsDraft.items})
   .then(function(){showToast('✓ 設定を保存しました');closeModal('settings-modal');})
   .catch(function(e){showToast('⚠️ 保存に失敗しました: '+e.message);setSyncStatus('error');})
   .finally(function(){btn.disabled=false;btn.textContent='変更を保存する';});
